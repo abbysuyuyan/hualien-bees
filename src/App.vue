@@ -4,14 +4,25 @@
       <div class="header-left">
         <h1>我要配送</h1>
       </div>
-      <el-button
-        class="header-action"
-        type="primary"
-        :icon="Plus"
-        @click="openCreate"
-      >
-        新增物資需求
-      </el-button>
+      <div class="header-right">
+        <el-button class="create-btn" type="primary" :icon="Plus" @click="openCreate">
+          新增物資需求
+        </el-button>
+        <el-select
+          v-model="selectedTag"
+          class="tag-filter"
+          clearable
+          placeholder="篩選類別"
+          size="large"
+        >
+          <el-option
+            v-for="option in tagFilterOptions"
+            :key="option.value"
+            :label="option.label"
+            :value="option.value"
+          />
+        </el-select>
+      </div>
     </header>
 
     <main class="page-main">
@@ -19,13 +30,13 @@
 
       <template v-else>
         <el-empty
-          v-if="mergedRequests.length === 0"
+          v-if="visibleRequests.length === 0"
           description="目前沒有物資需求"
         />
 
         <div v-else class="cards-grid">
           <el-card
-            v-for="req in mergedRequests"
+            v-for="req in visibleRequests"
             :key="req.id"
             class="request-card"
             :class="cardClasses(req)"
@@ -550,6 +561,12 @@ const submitting = reactive({
   delivery: false,
 });
 
+const selectedTag = ref("");
+const tagFilterOptions = computed(() => [
+  { value: "", label: "全部類別" },
+  ...typeOptions,
+]);
+
 const createDialogVisible = ref(false);
 const createConfirmVisible = ref(false);
 const createPolicyAccepted = ref(false);
@@ -806,6 +823,14 @@ const mergedRequests = computed(() => {
     if (!aCompleted && bCompleted) return -1;
     return 0;
   });
+});
+
+const visibleRequests = computed(() => {
+  const list = mergedRequests.value;
+  if (!selectedTag.value) return list;
+  return list.filter((req) =>
+    req.items.some((item) => item.type === selectedTag.value)
+  );
 });
 
 const cardTags = (req) => {
@@ -1133,6 +1158,10 @@ watch(mergedRequests, () => {
   syncCompletedCollapseState();
   requestAnimationFrame(adjustGoogleSitesHeight);
 });
+
+watch(selectedTag, () => {
+  requestAnimationFrame(adjustGoogleSitesHeight);
+});
 </script>
 
 <style scoped>
@@ -1166,8 +1195,14 @@ html {
   gap: 6px;
 }
 
-.header-action {
-  align-self: center;
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tag-filter {
+  min-width: 160px;
 }
 
 .page-header h1 {
@@ -1791,18 +1826,39 @@ html {
 @media (max-width: 640px) {
   .page-header {
     padding: 16px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
   }
 
   .page-main {
-    padding: 0 16px 16px;
+    padding: 0;
   }
 
   .cards-grid {
     grid-template-columns: 1fr;
+    width: 100%;
+    padding: 0 12px;
+    box-sizing: border-box;
   }
 
   .material-row {
     gap: 8px;
+  }
+
+  .header-right {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .tag-filter {
+    width: 100%;
+  }
+
+  .header-right .el-button {
+    width: 100%;
   }
 }
 
