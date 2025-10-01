@@ -616,7 +616,7 @@ const createPayload = computed(() => ({
 
 const isCreateValid = computed(() => {
   const payload = createPayload.value;
-  if (!payload.org || !payload.phone || !payload.address) return false;
+  if (!payload.org || !payload.address) return false;
   if (payload.items.length === 0) return false;
   if (!createPolicyAccepted.value) return false;
   return payload.items.every(
@@ -1525,10 +1525,16 @@ html {
   color: #6b7280;
 }
 
-.with-icon {
-  display: flex;
-  align-items: center;
+.hint.with-icon {
+  display: inline-flex;
+  align-items: flex-start;
   gap: 6px;
+  line-height: 1.4;
+}
+
+.hint.with-icon :deep(.el-icon) {
+  margin-top: 2px;
+  flex-shrink: 0;
 }
 
 .policy-checkbox {
