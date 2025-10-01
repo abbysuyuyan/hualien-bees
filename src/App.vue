@@ -27,33 +27,44 @@
             :key="req.id"
             class="request-card"
             :class="cardClasses(req)"
-            shadow="hover"
+            :shadow="isCompleted(req) ? 'never' : 'hover'"
           >
             <div class="card-header">
-              <div class="card-title">
-                <h2>{{ req.org }}</h2>
-                <div class="tags">
-                  <el-tag
-                    v-for="tag in cardTags(req)"
-                    :key="tag.value"
-                    size="small"
-                    :style="{ backgroundColor: tag.color }"
-                    effect="dark"
-                  >
-                    {{ tag.label }}
-                  </el-tag>
-                  <el-tag
-                    size="small"
-                    :type="requestStatus(req).type"
-                    effect="dark"
-                  >
-                    {{ requestStatus(req).label }}
-                  </el-tag>
+              <div class="card-header-top">
+                <div class="card-title">
+                  <h2>{{ req.org }}</h2>
+                  <div class="tags">
+                    <el-tag
+                      v-for="tag in cardTags(req)"
+                      :key="tag.value"
+                      size="small"
+                      :style="{ backgroundColor: tag.color }"
+                      effect="dark"
+                    >
+                      {{ tag.label }}
+                    </el-tag>
+                    <el-tag
+                      size="small"
+                      :type="requestStatus(req).type"
+                      effect="dark"
+                    >
+                      {{ requestStatus(req).label }}
+                    </el-tag>
+                  </div>
+                </div>
+                <div class="published-at">
+                  <el-icon><Clock /></el-icon>
+                  <span class="meta-text">發布 {{ formatTimeAgo(req.created_at) }}</span>
                 </div>
               </div>
 
-              <div class="meta-row">
+            </div>
+
+            <div class="card-contact">
+              <div class="section-title">聯絡資訊</div>
+              <div class="contact-info">
                 <el-link
+                  class="contact-row"
                   :href="mapLink(req.address)"
                   target="_blank"
                   :underline="false"
@@ -61,25 +72,22 @@
                   <el-icon><Location /></el-icon>
                   <span class="meta-text">{{ req.address }}</span>
                 </el-link>
-              </div>
-
-              <div class="meta-row muted">
-                <div v-if="displayPhone(req)">
+                <div v-if="displayPhone(req)" class="contact-row">
                   <el-icon><Phone /></el-icon>
                   <span class="meta-text">{{ displayPhone(req) }}</span>
-                </div>
-                <div>
-                  <el-icon><Clock /></el-icon>
-                  <span class="meta-text">發布時間：{{ formatTimeAgo(req.created_at) }}</span>
                 </div>
               </div>
             </div>
 
+            <div class="card-divider" role="presentation"></div>
+
             <div class="card-content">
+              <div class="section-title">需求物資</div>
               <div
                 v-for="(item, index) in req.items"
                 :key="`${req.id}-${index}`"
                 class="item-row"
+                :class="{ 'is-fulfilled': isItemFulfilled(item) }"
               >
                 <div class="item-info">
                   <div class="item-title">
@@ -785,6 +793,8 @@ const typeMeta = (type) => TYPE_MAP[type] ?? TYPE_MAP['其他'];
 const remainingNeed = (item) =>
   Math.max(0, (item.need ?? 0) - (item.got ?? 0));
 
+const isItemFulfilled = (item) => remainingNeed(item) === 0;
+
 const progressPercentage = (item) => {
   if (!item.need || item.need <= 0) return 0;
   return Math.round(
@@ -1084,7 +1094,7 @@ watch(mergedRequests, () => {
 
 .request-card {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   border-radius: 18px;
   min-height: 100%;
 }
@@ -1095,6 +1105,7 @@ watch(mergedRequests, () => {
 
 .request-card.is-completed {
   background: #f3f4f6;
+  cursor: default;
 }
 
 .card-header {
@@ -1103,10 +1114,19 @@ watch(mergedRequests, () => {
   gap: 8px;
 }
 
+.card-header-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
 .card-title {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .card-title h2 {
@@ -1116,18 +1136,18 @@ watch(mergedRequests, () => {
   color: #111827;
 }
 
+.published-at {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
 .tags {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-}
-
-.meta-row {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  flex-wrap: wrap;
-  font-size: 0.9rem;
 }
 
 .meta-text {
@@ -1138,8 +1158,40 @@ watch(mergedRequests, () => {
   color: #6b7280;
 }
 
+.card-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.section-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.contact-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: #334155;
+}
+
+.card-divider {
+  margin: 8px 0 12px;
+  border-top: 1px dashed #e2e8f0;
+}
+
 .card-content {
-  margin-top: 12px;
+  margin-top: 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -1156,6 +1208,26 @@ watch(mergedRequests, () => {
 .item-row:first-of-type {
   border-top: none;
   padding-top: 0;
+}
+
+.item-row.is-fulfilled {
+  background: #f3f4f6;
+  border-radius: 12px;
+  padding: 12px;
+  border-top: none;
+}
+
+.item-row.is-fulfilled + .item-row {
+  border-top: none;
+}
+
+.item-row.is-fulfilled .item-name {
+  color: #4b5563;
+}
+
+.item-row.is-fulfilled .item-description,
+.item-row.is-fulfilled .need-number {
+  color: #6b7280;
 }
 
 .item-info {
@@ -1205,6 +1277,8 @@ watch(mergedRequests, () => {
   border-radius: 12px;
   background: rgba(34, 197, 94, 0.12);
   font-size: 1rem;
+  z-index: 5;
+  pointer-events: none;
 }
 
 .page-footer {
