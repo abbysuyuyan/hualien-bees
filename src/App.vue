@@ -64,18 +64,24 @@
               <div class="section-title">聯絡資訊</div>
               <div class="contact-info">
                 <el-link
-                  class="contact-row"
+                  class="contact-row contact-link contact-link-map"
                   :href="mapLink(req.address)"
                   target="_blank"
-                  :underline="false"
+                  :underline="true"
                 >
                   <el-icon><Location /></el-icon>
                   <span class="meta-text">{{ req.address }}</span>
+                  <el-icon class="contact-link-icon"><Link /></el-icon>
                 </el-link>
-                <div v-if="displayPhone(req)" class="contact-row">
+                <el-link
+                  v-if="displayPhone(req)"
+                  class="contact-row contact-link contact-link-phone"
+                  :href="phoneHref(displayPhone(req))"
+                  :underline="false"
+                >
                   <el-icon><Phone /></el-icon>
                   <span class="meta-text">{{ displayPhone(req) }}</span>
-                </div>
+                </el-link>
               </div>
             </div>
 
@@ -201,7 +207,6 @@
             v-model="item.need"
             :min="1"
             :max="999999"
-            controls-position="right"
             class="material-need-input"
           />
           <el-input
@@ -321,6 +326,7 @@
           />
           <div class="deliver-actions">
             <el-input-number
+              class="deliver-input"
               :model-value="deliveryPicks[item.index] ?? 0"
               :min="0"
               :max="remainingNeed(item)"
@@ -466,7 +472,7 @@ import {
   watch,
 } from 'vue';
 import { ElMessage } from 'element-plus';
-import { Clock, Location, Phone, Plus, Van } from '@element-plus/icons-vue';
+import { Clock, Link, Location, Phone, Plus, Van } from '@element-plus/icons-vue';
 
 const API_BASE_URL = 'https://guangfu250923.pttapp.cc';
 
@@ -768,6 +774,12 @@ const cardClasses = (req) => ({
 const displayPhone = (req) => {
   if (isCompleted(req)) return '';
   return req.phone ?? '';
+};
+
+const phoneHref = (phone) => {
+  if (!phone) return '';
+  const sanitized = `${phone}`.replace(/[^0-9+#*]/g, '');
+  return `tel:${sanitized || phone}`;
 };
 
 const requestStatus = (req) => {
@@ -1100,7 +1112,7 @@ watch(mergedRequests, () => {
 }
 
 .request-card.has-medical {
-  border: 1px solid rgba(239, 68, 68, 0.35);
+  border: 2px solid rgba(239, 68, 68, 0.35);
 }
 
 .request-card.is-completed {
@@ -1175,14 +1187,50 @@ watch(mergedRequests, () => {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  align-items: flex-start;
+  width: 100%;
 }
 
 .contact-row {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 6px;
   font-size: 0.9rem;
   color: #334155;
+}
+
+.contact-link {
+  justify-content: flex-start;
+  text-decoration: none;
+  width: 100%;
+}
+
+.contact-link-map {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  color: #1d4ed8;
+}
+
+.contact-link-map:hover {
+  color: #2563eb;
+}
+
+.contact-link-icon {
+  font-size: 1rem;
+  margin-top: 0 !important;
+}
+
+.contact-link-phone {
+  color: #0f766e;
+}
+
+.contact-link-phone:hover {
+  color: #0d9488;
+}
+
+.contact-row :deep(.el-icon) {
+  line-height: 1;
+  margin-top: 2px;
 }
 
 .card-divider {
@@ -1385,6 +1433,29 @@ watch(mergedRequests, () => {
   :deep(.el-dialog.dialog-responsive) {
     margin-top: 8vh;
   }
+
+  .deliver-card {
+    padding: 14px;
+  }
+
+  .deliver-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .deliver-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .deliver-input {
+    flex: 1;
+    min-width: 140px;
+    max-width: 220px;
+  }
 }
 
 .delivery-list {
@@ -1423,6 +1494,13 @@ watch(mergedRequests, () => {
   display: flex;
   align-items: center;
   gap: 12px;
+  justify-content: flex-end;
+  margin-left: auto;
+  flex-wrap: nowrap;
+}
+
+.deliver-actions :deep(.el-button) {
+  white-space: nowrap;
 }
 
 .delivery-footer {
@@ -1430,6 +1508,10 @@ watch(mergedRequests, () => {
   justify-content: space-between;
   align-items: center;
   width: 100%;
+}
+
+.deliver-input {
+  width: 160px;
 }
 
 .footer-actions {
