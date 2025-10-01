@@ -71,7 +71,7 @@
                 >
                   <el-icon><Location /></el-icon>
                   <span class="meta-text">{{ req.address }}</span>
-                  <el-icon class="contact-link-icon"><Link /></el-icon>
+                  <el-icon class="contact-link-icon"><TopRight /></el-icon>
                 </el-link>
                 <el-link
                   v-if="displayPhone(req)"
@@ -295,7 +295,7 @@
     <el-dialog
       v-model="deliveryDialogVisible"
       title="物資配送"
-      width="720px"
+      class="dialog-responsive delivery-dialog"
       @closed="onDeliveryClosed"
     >
       <p class="hint">目前物資需求進度</p>
@@ -472,7 +472,7 @@ import {
   watch,
 } from 'vue';
 import { ElMessage } from 'element-plus';
-import { Clock, Link, Location, Phone, Plus, Van } from '@element-plus/icons-vue';
+import { Clock, Location, Phone, Plus, TopRight, Van } from '@element-plus/icons-vue';
 
 const API_BASE_URL = 'https://guangfu250923.pttapp.cc';
 
@@ -1208,11 +1208,11 @@ watch(mergedRequests, () => {
 .contact-link-map {
   text-decoration: underline;
   text-underline-offset: 3px;
-  color: #1d4ed8;
+  color: var(--el-color-primary);
 }
 
 .contact-link-map:hover {
-  color: #2563eb;
+  color: var(--el-color-primary-dark-2);
 }
 
 .contact-link-icon {
