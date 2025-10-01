@@ -113,14 +113,6 @@
               <div class="card-actions">
                 <el-button
                   type="primary"
-                  text
-                  :icon="Edit"
-                  @click="openEdit(req)"
-                >
-                  修改
-                </el-button>
-                <el-button
-                  type="primary"
                   :icon="Van"
                   :disabled="isCompleted(req)"
                   @click="openDelivery(req)"
@@ -144,10 +136,10 @@
     <el-dialog
       v-model="createDialogVisible"
       title="物資需求"
-      width="720px"
+      class="dialog-responsive"
       @closed="onCreateClosed"
     >
-      <el-form label-width="92px" class="form-grid">
+      <el-form label-position="top" class="form-grid">
         <el-form-item label="單位名稱" required>
           <el-input v-model.trim="createForm.org" placeholder="污泥暫置場" />
         </el-form-item>
@@ -165,17 +157,11 @@
             placeholder="花蓮縣光復鄉..."
           />
         </el-form-item>
-        <el-form-item label="備註">
-          <el-input v-model.trim="createForm.notes" placeholder="其他說明..." />
-        </el-form-item>
       </el-form>
 
       <section class="materials-section">
         <div class="materials-header">
           <h3>物資清單<span class="required">*</span></h3>
-          <el-button type="primary" link @click="addCreateItem">
-            新增物資
-          </el-button>
         </div>
 
         <div v-if="createForm.items.length === 0" class="items-empty">
@@ -190,7 +176,7 @@
           <el-select
             v-model="item.type"
             placeholder="選擇類型"
-            style="width: 150px"
+            class="material-type-select"
           >
             <el-option
               v-for="option in typeOptions"
@@ -208,11 +194,12 @@
             :min="1"
             :max="999999"
             controls-position="right"
+            class="material-need-input"
           />
           <el-input
             v-model.trim="item.unit"
             placeholder="單位（箱）"
-            style="width: 120px"
+            class="material-unit-input"
           />
           <el-button
             v-if="createForm.items.length > 1"
@@ -223,6 +210,10 @@
             移除
           </el-button>
         </div>
+
+        <el-button type="primary" class="add-item-button" @click="addCreateItem">
+          新增物資
+        </el-button>
       </section>
 
       <template #footer>
@@ -253,9 +244,6 @@
         <el-descriptions-item label="電話">
           {{ createPayload.phone }}
         </el-descriptions-item>
-        <el-descriptions-item v-if="createPayload.notes" label="備註">
-          {{ createPayload.notes }}
-        </el-descriptions-item>
       </el-descriptions>
 
       <el-table
@@ -284,107 +272,6 @@
           type="primary"
           :loading="submitting.create"
           @click="submitCreate"
-        >
-          送出
-        </el-button>
-      </template>
-    </el-dialog>
-
-    <!-- Edit Dialog -->
-    <el-dialog
-      v-model="editDialogVisible"
-      title="修改需求"
-      width="720px"
-      @closed="onEditClosed"
-    >
-      <el-form label-width="92px" class="form-grid">
-        <el-form-item label="單位名稱" required>
-          <el-input v-model.trim="editForm.org" />
-        </el-form-item>
-        <el-form-item label="電話" required>
-          <el-input v-model.trim="editForm.phone" type="tel" />
-          <span class="hint">注意！電話將會公開在網路上，取得所需物資後將會自動隱藏</span>
-        </el-form-item>
-        <el-form-item label="地址" required>
-          <el-input v-model.trim="editForm.address" />
-        </el-form-item>
-        <el-form-item label="備註">
-          <el-input v-model.trim="editForm.notes" />
-        </el-form-item>
-      </el-form>
-
-      <section class="materials-section">
-        <div class="materials-header">
-          <h3>物資清單（僅供檢視）</h3>
-        </div>
-        <el-empty
-          v-if="editItems.length === 0"
-          description="無物資項目"
-        />
-        <el-table
-          v-else
-          :data="editItems"
-          border
-          size="small"
-        >
-          <el-table-column prop="name" label="物資" />
-          <el-table-column label="類型" width="120">
-            <template #default="{ row }">
-              <el-tag size="small">{{ typeMeta(row.type).label }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="需求" width="140">
-            <template #default="{ row }">
-              {{ row.need }}{{ row.unit }}
-            </template>
-          </el-table-column>
-          <el-table-column label="已收到" width="140">
-            <template #default="{ row }">
-              {{ row.got }}{{ row.unit }}
-            </template>
-          </el-table-column>
-        </el-table>
-      </section>
-
-      <template #footer>
-        <el-button @click="editDialogVisible = false">取消</el-button>
-        <el-button
-          type="primary"
-          :disabled="!isEditValid || submitting.edit"
-          @click="openEditConfirm"
-        >
-          確認修改
-        </el-button>
-      </template>
-    </el-dialog>
-
-    <!-- Edit Confirm -->
-    <el-dialog
-      v-model="editConfirmVisible"
-      title="確認修改"
-      width="620px"
-    >
-      <el-descriptions border :column="1" size="small">
-        <el-descriptions-item label="單位名稱">
-          {{ editPayload.org }}
-        </el-descriptions-item>
-        <el-descriptions-item label="地址">
-          {{ editPayload.address }}
-        </el-descriptions-item>
-        <el-descriptions-item label="電話">
-          {{ editPayload.phone }}
-        </el-descriptions-item>
-        <el-descriptions-item v-if="editPayload.notes" label="備註">
-          {{ editPayload.notes }}
-        </el-descriptions-item>
-      </el-descriptions>
-
-      <template #footer>
-        <el-button @click="editConfirmVisible = false">返回修改</el-button>
-        <el-button
-          type="primary"
-          :loading="submitting.edit"
-          @click="submitEdit"
         >
           送出
         </el-button>
@@ -571,7 +458,7 @@ import {
   watch,
 } from 'vue';
 import { ElMessage } from 'element-plus';
-import { Clock, Edit, Location, Phone, Plus, Van } from '@element-plus/icons-vue';
+import { Clock, Location, Phone, Plus, Van } from '@element-plus/icons-vue';
 
 const API_BASE_URL = 'https://guangfu250923.pttapp.cc';
 
@@ -592,14 +479,11 @@ const requests = ref([]);
 const loading = ref(false);
 const submitting = reactive({
   create: false,
-  edit: false,
   delivery: false,
 });
 
 const createDialogVisible = ref(false);
 const createConfirmVisible = ref(false);
-const editDialogVisible = ref(false);
-const editConfirmVisible = ref(false);
 const deliveryDialogVisible = ref(false);
 const deliveryConfirmVisible = ref(false);
 const deliverAllConfirmVisible = ref(false);
@@ -608,19 +492,8 @@ const createForm = reactive({
   org: '',
   phone: '',
   address: '',
-  notes: '',
   items: [],
 });
-
-const editForm = reactive({
-  org: '',
-  phone: '',
-  address: '',
-  notes: '',
-});
-
-const editItems = ref([]);
-const currentEditTarget = ref(null);
 
 const deliveryTarget = ref(null);
 const deliveryPicks = reactive({});
@@ -637,7 +510,6 @@ const resetCreateForm = () => {
   createForm.org = '';
   createForm.phone = '';
   createForm.address = '';
-  createForm.notes = '';
   createForm.items.splice(0, createForm.items.length, makeEmptyItem());
 };
 
@@ -675,7 +547,6 @@ const createPayload = computed(() => ({
   org: createForm.org.trim(),
   phone: createForm.phone.trim(),
   address: createForm.address.trim(),
-  notes: createForm.notes.trim(),
   items: createItems.value,
 }));
 
@@ -720,61 +591,6 @@ const submitCreate = async () => {
     ElMessage.error(error.message || '新增需求失敗');
   } finally {
     submitting.create = false;
-  }
-};
-
-const openEdit = (req) => {
-  currentEditTarget.value = req;
-  editForm.org = req.org;
-  editForm.phone = req.phone;
-  editForm.address = req.address;
-  editForm.notes = req.notes ?? '';
-  editItems.value = req.items ? [...req.items] : [];
-  editDialogVisible.value = true;
-};
-
-const onEditClosed = () => {
-  editConfirmVisible.value = false;
-  currentEditTarget.value = null;
-};
-
-const editPayload = computed(() => ({
-  org: editForm.org.trim(),
-  phone: editForm.phone.trim(),
-  address: editForm.address.trim(),
-  notes: editForm.notes.trim(),
-}));
-
-const isEditValid = computed(() => {
-  const payload = editPayload.value;
-  return !!(payload.org && payload.phone && payload.address);
-});
-
-const openEditConfirm = () => {
-  if (!isEditValid.value || submitting.edit) return;
-  editConfirmVisible.value = true;
-};
-
-const submitEdit = async () => {
-  if (!isEditValid.value || submitting.edit || !currentEditTarget.value) return;
-  submitting.edit = true;
-  try {
-    const payload = editPayload.value;
-    const merged = mergeRequestsByOrganization(requests.value);
-    const target = merged.find((item) => item.id === currentEditTarget.value.id);
-    const supplyIds = target?.items
-      ?.map((item) => item.supplyId)
-      .filter(Boolean);
-    const requestId = supplyIds?.length ? supplyIds[0] : currentEditTarget.value.id;
-    await updateRequestData(requestId, payload);
-    ElMessage.success('已修改需求');
-    editConfirmVisible.value = false;
-    editDialogVisible.value = false;
-    await fetchRequests();
-  } catch (error) {
-    ElMessage.error(error.message || '修改需求失敗');
-  } finally {
-    submitting.edit = false;
   }
 };
 
@@ -1090,7 +906,6 @@ const transformToApiData = (frontendData) => {
     name: frontendData.org,
     address: frontendData.address,
     phone: frontendData.phone,
-    notes: frontendData.notes || '',
     supplies: {
       tag: frontendData.items[0].type,
       name: frontendData.items[0].name,
@@ -1148,25 +963,6 @@ const createRequest = async (payload) => {
       const errorText = await response.text();
       throw new Error(`第 ${i + 1} 個物資新增失敗: HTTP ${response.status} - ${errorText}`);
     }
-  }
-};
-
-const updateRequestData = async (requestId, payload) => {
-  const response = await fetch(`${API_BASE_URL}/supplies/${requestId}`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      name: payload.org,
-      address: payload.address,
-      phone: payload.phone,
-      notes: payload.notes || '',
-    }),
-  });
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`HTTP ${response.status} - ${errorText}`);
   }
 };
 
@@ -1280,8 +1076,10 @@ watch(mergedRequests, () => {
 
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
+  max-width: 720px;
+  margin: 0 auto;
 }
 
 .request-card {
@@ -1390,7 +1188,7 @@ watch(mergedRequests, () => {
 
 .card-actions {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   gap: 12px;
 }
@@ -1438,7 +1236,7 @@ watch(mergedRequests, () => {
 
 .materials-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   gap: 8px;
 }
@@ -1467,6 +1265,52 @@ watch(mergedRequests, () => {
   grid-template-columns: 150px 1fr 120px 120px auto;
   gap: 12px;
   align-items: center;
+}
+
+.material-row > * {
+  width: 100%;
+}
+
+.material-row .el-button {
+  justify-self: end;
+}
+
+.material-type-select,
+.material-need-input,
+.material-unit-input {
+  width: 100%;
+}
+
+.add-item-button {
+  width: 100%;
+  margin-top: 4px;
+}
+
+@media (max-width: 768px) {
+  .cards-grid {
+    max-width: 100%;
+  }
+
+  .material-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .material-row .el-button {
+    justify-self: flex-start;
+    padding-left: 0;
+  }
+}
+
+:deep(.el-dialog.dialog-responsive) {
+  width: min(720px, calc(100vw - 32px));
+  max-width: 100%;
+}
+
+@media (max-width: 600px) {
+  :deep(.el-dialog.dialog-responsive) {
+    margin-top: 8vh;
+  }
 }
 
 .delivery-list {
