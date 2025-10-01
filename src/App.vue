@@ -304,7 +304,11 @@
     </el-dialog>
 
     <!-- Create Confirm -->
-    <el-dialog v-model="createConfirmVisible" title="確認新增" width="620px">
+    <el-dialog
+      v-model="createConfirmVisible"
+      title="確認新增"
+      class="dialog-responsive dialog-confirm"
+    >
       <el-descriptions border :column="1" size="small">
         <el-descriptions-item label="單位名稱">
           {{ createPayload.org }}
@@ -425,7 +429,11 @@
     </el-dialog>
 
     <!-- Delivery Confirm -->
-    <el-dialog v-model="deliveryConfirmVisible" title="確認配送" width="620px">
+    <el-dialog
+      v-model="deliveryConfirmVisible"
+      title="確認配送"
+      class="dialog-responsive dialog-confirm"
+    >
       <el-descriptions v-if="deliveryTarget" border :column="1" size="small">
         <el-descriptions-item label="配送到">
           {{ deliveryTarget.org }}
@@ -464,7 +472,7 @@
     <el-dialog
       v-model="deliverAllConfirmVisible"
       title="確認全部送達"
-      width="620px"
+      class="dialog-responsive dialog-confirm"
     >
       <el-descriptions v-if="deliveryTarget" border :column="1" size="small">
         <el-descriptions-item label="配送到">
@@ -1656,9 +1664,22 @@ html {
   max-width: 100%;
 }
 
+:deep(.el-dialog.dialog-confirm) {
+  width: min(520px, calc(100vw - 32px));
+}
+
+:deep(.el-dialog.dialog-confirm .el-dialog__body) {
+  max-height: min(70vh, 520px);
+  overflow-y: auto;
+}
+
 @media (max-width: 600px) {
   :deep(.el-dialog.dialog-responsive) {
     margin-top: 8vh;
+  }
+
+  :deep(.el-dialog.dialog-confirm) {
+    margin-top: 12vh;
   }
 
   .deliver-card {
@@ -1750,6 +1771,12 @@ html {
 .footer-actions {
   display: flex;
   gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .footer-actions {
+    gap: 0;
+  }
 }
 
 @media (max-width: 960px) {
