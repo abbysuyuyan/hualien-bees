@@ -192,15 +192,16 @@
         <el-form-item label="單位名稱" required>
           <el-input v-model.trim="createForm.org" placeholder="污泥暫置場" />
         </el-form-item>
-        <el-form-item label="電話" required>
+        <el-form-item label="電話">
           <el-input
             v-model.trim="createForm.phone"
             placeholder="0912345678"
             type="tel"
           />
-          <span class="hint"
-            >注意！電話將會公開在網路上，取得所需物資後將會自動隱藏</span
-          >
+          <span class="hint with-icon">
+            <el-icon><WarningFilled /></el-icon>
+            填寫電話可幫助資訊傳遞，將會公開在網路上，取得所需物資後會自動隱藏
+          </span>
         </el-form-item>
         <el-form-item label="地址" required>
           <el-input
@@ -261,6 +262,7 @@
         <el-button
           type="primary"
           class="add-item-button"
+          :icon="Plus"
           @click="addCreateItem"
         >
           新增物資
@@ -513,6 +515,7 @@ import {
   Plus,
   TopRight,
   Van,
+  WarningFilled,
 } from "@element-plus/icons-vue";
 
 const API_BASE_URL = "https://guangfu250923.pttapp.cc";
@@ -522,7 +525,9 @@ const TYPE_MAP = {
   醫療用品: { label: "醫療用品", order: 1, color: "#f59e0b" },
   生活用品: { label: "生活用品", order: 2, color: "#22c55e" },
   大型機具: { label: "大型機具", order: 3, color: "#3b82f6" },
-  其他: { label: "其他", order: 4, color: "#a855f7" },
+  動物醫療: { label: "動物醫療", order: 4, color: "#934f36" },
+  水電: { label: "水電", order: 5, color: "#8b5cf6" },
+  其他: { label: "其他", order: 6, color: "#a855f7" },
 };
 
 const typeOptions = Object.keys(TYPE_MAP).map((value) => ({
@@ -1123,6 +1128,10 @@ watch(mergedRequests, () => {
 </script>
 
 <style scoped>
+html {
+  font-size: 20px;
+}
+
 .app-shell {
   min-height: 100vh;
   display: flex;
@@ -1516,6 +1525,12 @@ watch(mergedRequests, () => {
   color: #6b7280;
 }
 
+.with-icon {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .policy-checkbox {
   margin-top: 28px;
   display: flex;
@@ -1578,6 +1593,11 @@ watch(mergedRequests, () => {
 
 .material-row > * {
   width: 100%;
+}
+
+.el-button {
+  padding: 20px 24px;
+  font-size: 1rem;
 }
 
 .material-row .el-button {
