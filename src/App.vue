@@ -1129,7 +1129,6 @@ watch(mergedRequests, () => {
 .card-header-top {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
   align-items: flex-start;
   flex-wrap: wrap;
 }
@@ -1137,7 +1136,7 @@ watch(mergedRequests, () => {
 .card-title {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
@@ -1160,6 +1159,10 @@ watch(mergedRequests, () => {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+:deep(.el-tag) {
+  border: none;
 }
 
 .meta-text {
