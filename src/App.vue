@@ -1355,7 +1355,6 @@ watch(mergedRequests, () => {
 .form-grid {
   display: flex;
   flex-direction: column;
-  gap: 8px;
 }
 
 .hint {
@@ -1366,7 +1365,7 @@ watch(mergedRequests, () => {
 }
 
 .policy-checkbox {
-  margin-top: 12px;
+  margin-top: 28px;
   display: flex;
   align-items: flex-start;
   gap: 6px;
@@ -1505,6 +1504,12 @@ watch(mergedRequests, () => {
     flex: 1;
     min-width: 140px;
     max-width: 220px;
+  }
+
+  /* Mobile: add separators between materials in create modal */
+  .materials-section .material-row + .material-row {
+    border-top: 1px dashed #e2e8f0;
+    padding-top: 12px;
   }
 }
 
