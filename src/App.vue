@@ -2,12 +2,14 @@
   <div class="app-shell">
     <header class="page-header">
       <div class="header-left">
-        <h1>急需物資清單</h1>
-        <span class="header-note"
-          >填寫完需求請關閉頁面，以確保需求被確實送出</span
-        >
+        <h1>我要配送</h1>
       </div>
-      <el-button type="primary" :icon="Plus" @click="openCreate">
+      <el-button
+        class="header-action"
+        type="primary"
+        :icon="Plus"
+        @click="openCreate"
+      >
         新增物資需求
       </el-button>
     </header>
@@ -54,10 +56,11 @@
                 </div>
                 <div class="published-at">
                   <el-icon><Clock /></el-icon>
-                  <span class="meta-text">發布 {{ formatTimeAgo(req.created_at) }}</span>
+                  <span class="meta-text"
+                    >發布 {{ formatTimeAgo(req.created_at) }}</span
+                  >
                 </div>
               </div>
-
             </div>
 
             <div class="card-contact">
@@ -85,8 +88,6 @@
               </div>
             </div>
 
-            <div class="card-divider" role="presentation"></div>
-
             <div class="card-content">
               <div class="section-title">需求物資</div>
               <div
@@ -109,7 +110,8 @@
                   <div class="item-description">
                     <span>需求 {{ item.need }}{{ item.unit }}</span>
                     <span>
-                      已收到 {{ item.got }}/{{ item.need }}{{ item.unit }}，還需要：
+                      已收到 {{ item.got }}/{{ item.need
+                      }}{{ item.unit }}，還需要：
                       <strong class="need-number"
                         >{{ remainingNeed(item) }}{{ item.unit }}</strong
                       >
@@ -163,7 +165,9 @@
             placeholder="0912345678"
             type="tel"
           />
-          <span class="hint">注意！電話將會公開在網路上，取得所需物資後將會自動隱藏</span>
+          <span class="hint"
+            >注意！電話將會公開在網路上，取得所需物資後將會自動隱藏</span
+          >
         </el-form-item>
         <el-form-item label="地址" required>
           <el-input
@@ -199,10 +203,7 @@
               :value="option.value"
             />
           </el-select>
-          <el-input
-            v-model.trim="item.name"
-            placeholder="物資（瓶裝水）"
-          />
+          <el-input v-model.trim="item.name" placeholder="物資（瓶裝水）" />
           <el-input-number
             v-model="item.need"
             :min="1"
@@ -224,10 +225,36 @@
           </el-button>
         </div>
 
-        <el-button type="primary" class="add-item-button" @click="addCreateItem">
+        <el-button
+          type="primary"
+          class="add-item-button"
+          @click="addCreateItem"
+        >
           新增物資
         </el-button>
       </section>
+
+      <el-checkbox v-model="createPolicyAccepted" class="policy-checkbox">
+        <span class="required-icon">*</span>我已理解本平台
+        <el-link
+          href="https://docs.google.com/document/d/1JOjahSi5om1Gx4mydQ8FiOzZMVwLGimY5NPz6-BWZKw/edit?usp=sharing"
+          target="_blank"
+          type="primary"
+          :underline="false"
+        >
+          服務政策
+        </el-link>
+        及
+        <el-link
+          href="https://sites.google.com/view/guangfu250923/%E9%9A%B1%E7%A7%81%E6%AC%8A%E6%94%BF%E7%AD%96?authuser=0"
+          target="_blank"
+          type="primary"
+          :underline="false"
+        >
+          隱私權條款
+        </el-link>
+        之使用
+      </el-checkbox>
 
       <template #footer>
         <el-button @click="createDialogVisible = false">取消</el-button>
@@ -242,11 +269,7 @@
     </el-dialog>
 
     <!-- Create Confirm -->
-    <el-dialog
-      v-model="createConfirmVisible"
-      title="確認新增"
-      width="620px"
-    >
+    <el-dialog v-model="createConfirmVisible" title="確認新增" width="620px">
       <el-descriptions border :column="1" size="small">
         <el-descriptions-item label="單位名稱">
           {{ createPayload.org }}
@@ -273,9 +296,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="need" label="需求數量" width="120">
-          <template #default="{ row }">
-            {{ row.need }}{{ row.unit }}
-          </template>
+          <template #default="{ row }"> {{ row.need }}{{ row.unit }} </template>
         </el-table-column>
       </el-table>
 
@@ -316,7 +337,9 @@
               <strong>{{ item.name }}</strong>
               <el-tag size="small">{{ typeMeta(item.type).label }}</el-tag>
             </div>
-            <span class="muted">尚缺 {{ remainingNeed(item) }}{{ item.unit }}</span>
+            <span class="muted"
+              >尚缺 {{ remainingNeed(item) }}{{ item.unit }}</span
+            >
           </div>
           <el-progress
             :percentage="progressPercentage(item)"
@@ -367,17 +390,8 @@
     </el-dialog>
 
     <!-- Delivery Confirm -->
-    <el-dialog
-      v-model="deliveryConfirmVisible"
-      title="確認配送"
-      width="620px"
-    >
-      <el-descriptions
-        v-if="deliveryTarget"
-        border
-        :column="1"
-        size="small"
-      >
+    <el-dialog v-model="deliveryConfirmVisible" title="確認配送" width="620px">
+      <el-descriptions v-if="deliveryTarget" border :column="1" size="small">
         <el-descriptions-item label="配送到">
           {{ deliveryTarget.org }}
         </el-descriptions-item>
@@ -395,9 +409,7 @@
       >
         <el-table-column prop="name" label="物資" />
         <el-table-column label="配送數量" width="160">
-          <template #default="{ row }">
-            {{ row.qty }}{{ row.unit }}
-          </template>
+          <template #default="{ row }"> {{ row.qty }}{{ row.unit }} </template>
         </el-table-column>
       </el-table>
 
@@ -419,12 +431,7 @@
       title="確認全部送達"
       width="620px"
     >
-      <el-descriptions
-        v-if="deliveryTarget"
-        border
-        :column="1"
-        size="small"
-      >
+      <el-descriptions v-if="deliveryTarget" border :column="1" size="small">
         <el-descriptions-item label="配送到">
           {{ deliveryTarget.org }}
         </el-descriptions-item>
@@ -463,25 +470,25 @@
 </template>
 
 <script setup>
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
+import { ElMessage } from "element-plus";
 import {
-  computed,
-  onMounted,
-  onUnmounted,
-  reactive,
-  ref,
-  watch,
-} from 'vue';
-import { ElMessage } from 'element-plus';
-import { Clock, Location, Phone, Plus, TopRight, Van } from '@element-plus/icons-vue';
+  Clock,
+  Location,
+  Phone,
+  Plus,
+  TopRight,
+  Van,
+} from "@element-plus/icons-vue";
 
-const API_BASE_URL = 'https://guangfu250923.pttapp.cc';
+const API_BASE_URL = "https://guangfu250923.pttapp.cc";
 
 const TYPE_MAP = {
-  '食物/水': { label: '飲食', order: 0, color: '#ef4444' },
-  醫療用品: { label: '醫療用品', order: 1, color: '#f59e0b' },
-  生活用品: { label: '生活用品', order: 2, color: '#22c55e' },
-  大型機具: { label: '大型機具', order: 3, color: '#3b82f6' },
-  其他: { label: '其他', order: 4, color: '#a855f7' },
+  "食物/水": { label: "飲食", order: 0, color: "#ef4444" },
+  醫療用品: { label: "醫療用品", order: 1, color: "#f59e0b" },
+  生活用品: { label: "生活用品", order: 2, color: "#22c55e" },
+  大型機具: { label: "大型機具", order: 3, color: "#3b82f6" },
+  其他: { label: "其他", order: 4, color: "#a855f7" },
 };
 
 const typeOptions = Object.keys(TYPE_MAP).map((value) => ({
@@ -498,14 +505,15 @@ const submitting = reactive({
 
 const createDialogVisible = ref(false);
 const createConfirmVisible = ref(false);
+const createPolicyAccepted = ref(false);
 const deliveryDialogVisible = ref(false);
 const deliveryConfirmVisible = ref(false);
 const deliverAllConfirmVisible = ref(false);
 
 const createForm = reactive({
-  org: '',
-  phone: '',
-  address: '',
+  org: "",
+  phone: "",
+  address: "",
   items: [],
 });
 
@@ -513,18 +521,19 @@ const deliveryTarget = ref(null);
 const deliveryPicks = reactive({});
 
 const makeEmptyItem = () => ({
-  type: '',
-  name: '',
+  type: "",
+  name: "",
   need: 1,
-  unit: '',
+  unit: "",
   got: 0,
 });
 
 const resetCreateForm = () => {
-  createForm.org = '';
-  createForm.phone = '';
-  createForm.address = '';
+  createForm.org = "";
+  createForm.phone = "";
+  createForm.address = "";
   createForm.items.splice(0, createForm.items.length, makeEmptyItem());
+  createPolicyAccepted.value = false;
 };
 
 const addCreateItem = () => {
@@ -543,13 +552,14 @@ const openCreate = () => {
 
 const onCreateClosed = () => {
   createConfirmVisible.value = false;
+  createPolicyAccepted.value = false;
 };
 
 const sanitizeItem = (item) => ({
   type: item.type,
-  name: item.name?.trim() ?? '',
+  name: item.name?.trim() ?? "",
   need: Number.isFinite(Number(item.need)) ? Number(item.need) : 0,
-  unit: item.unit?.trim() ?? '',
+  unit: item.unit?.trim() ?? "",
   got: Number.isFinite(Number(item.got)) ? Number(item.got) : 0,
 });
 
@@ -568,12 +578,9 @@ const isCreateValid = computed(() => {
   const payload = createPayload.value;
   if (!payload.org || !payload.phone || !payload.address) return false;
   if (payload.items.length === 0) return false;
+  if (!createPolicyAccepted.value) return false;
   return payload.items.every(
-    (item) =>
-      !!item.type &&
-      !!item.name &&
-      item.need >= 1 &&
-      !!item.unit
+    (item) => !!item.type && !!item.name && item.need >= 1 && !!item.unit
   );
 });
 
@@ -602,7 +609,7 @@ const submitCreate = async () => {
     createDialogVisible.value = false;
     await fetchRequests();
   } catch (error) {
-    ElMessage.error(error.message || '新增需求失敗');
+    ElMessage.error(error.message || "新增需求失敗");
   } finally {
     submitting.create = false;
   }
@@ -658,8 +665,8 @@ const deliverySummaryItems = computed(() => {
       const item = deliveryTarget.value.items[index];
       return {
         index,
-        name: item?.name ?? '',
-        unit: item?.unit ?? '',
+        name: item?.name ?? "",
+        unit: item?.unit ?? "",
         qty,
       };
     });
@@ -700,12 +707,12 @@ const submitDelivery = async () => {
       deliveryData[item.index] = newGot;
     });
     await updateDeliveryProgress(deliveryTarget.value.id, deliveryData);
-    ElMessage.success('已提交配送');
+    ElMessage.success("已提交配送");
     deliveryConfirmVisible.value = false;
     deliveryDialogVisible.value = false;
     await fetchRequests();
   } catch (error) {
-    ElMessage.error(error.message || '配送更新失敗');
+    ElMessage.error(error.message || "配送更新失敗");
   } finally {
     submitting.delivery = false;
   }
@@ -714,7 +721,7 @@ const submitDelivery = async () => {
 const openDeliverAllConfirm = () => {
   if (!deliveryTarget.value) return;
   if (deliverAllSummaryItems.value.length === 0) {
-    ElMessage.info('此需求已全部完成');
+    ElMessage.info("此需求已全部完成");
     return;
   }
   deliverAllConfirmVisible.value = true;
@@ -731,12 +738,12 @@ const submitDeliverAll = async () => {
       deliveryData[item.index] = deliveryTarget.value.items[item.index].need;
     });
     await updateDeliveryProgress(deliveryTarget.value.id, deliveryData);
-    ElMessage.success('已標記全部送達');
+    ElMessage.success("已標記全部送達");
     deliverAllConfirmVisible.value = false;
     deliveryDialogVisible.value = false;
     await fetchRequests();
   } catch (error) {
-    ElMessage.error(error.message || '配送更新失敗');
+    ElMessage.error(error.message || "配送更新失敗");
   } finally {
     submitting.delivery = false;
   }
@@ -754,9 +761,7 @@ const mergedRequests = computed(() => {
 });
 
 const cardTags = (req) => {
-  const metas = [
-    ...new Set(req.items.map((item) => typeMeta(item.type))),
-  ];
+  const metas = [...new Set(req.items.map((item) => typeMeta(item.type)))];
   return metas
     .sort((a, b) => a.order - b.order)
     .map((meta) => ({
@@ -767,43 +772,42 @@ const cardTags = (req) => {
 };
 
 const cardClasses = (req) => ({
-  'is-completed': isCompleted(req),
-  'has-medical': req.items.some((item) => item.type === '醫療用品'),
+  "is-completed": isCompleted(req),
+  "has-medical": req.items.some((item) => item.type === "醫療用品"),
 });
 
 const displayPhone = (req) => {
-  if (isCompleted(req)) return '';
-  return req.phone ?? '';
+  if (isCompleted(req)) return "";
+  return req.phone ?? "";
 };
 
 const phoneHref = (phone) => {
-  if (!phone) return '';
-  const sanitized = `${phone}`.replace(/[^0-9+#*]/g, '');
+  if (!phone) return "";
+  const sanitized = `${phone}`.replace(/[^0-9+#*]/g, "");
   return `tel:${sanitized || phone}`;
 };
 
 const requestStatus = (req) => {
-  if (isCompleted(req)) return { label: '已完成', type: 'success' };
+  if (isCompleted(req)) return { label: "已完成", type: "success" };
   if (
     req.items.some(
-      (item) => item.type === '醫療用品' && remainingNeed(item) > 0
+      (item) => item.type === "醫療用品" && remainingNeed(item) > 0
     )
   ) {
-    return { label: '緊急', type: 'danger' };
+    return { label: "緊急", type: "danger" };
   }
   if (req.items.some((item) => remainingNeed(item) > 0)) {
-    return { label: '尚缺', type: 'warning' };
+    return { label: "尚缺", type: "warning" };
   }
-  return { label: '緊急', type: 'danger' };
+  return { label: "緊急", type: "danger" };
 };
 
 const isCompleted = (req) =>
   req.items.every((item) => (item.got ?? 0) >= (item.need ?? 0));
 
-const typeMeta = (type) => TYPE_MAP[type] ?? TYPE_MAP['其他'];
+const typeMeta = (type) => TYPE_MAP[type] ?? TYPE_MAP["其他"];
 
-const remainingNeed = (item) =>
-  Math.max(0, (item.need ?? 0) - (item.got ?? 0));
+const remainingNeed = (item) => Math.max(0, (item.need ?? 0) - (item.got ?? 0));
 
 const isItemFulfilled = (item) => remainingNeed(item) === 0;
 
@@ -815,16 +819,16 @@ const progressPercentage = (item) => {
 };
 
 const itemProgressStatus = (item) => {
-  if (remainingNeed(item) === 0) return 'success';
-  return 'exception';
+  if (remainingNeed(item) === 0) return "success";
+  return "exception";
 };
 
 const formatTimeAgo = (timestamp) => {
-  if (!timestamp) return '時間未知';
+  if (!timestamp) return "時間未知";
   const now = Math.floor(Date.now() / 1000);
   const diff = now - timestamp;
-  if (diff < 0) return '剛剛';
-  if (diff < 60) return '剛剛';
+  if (diff < 0) return "剛剛";
+  if (diff < 60) return "剛剛";
   if (diff < 3600) return `${Math.floor(diff / 60)}分鐘前`;
   const hours = Math.floor(diff / 3600);
   if (hours < 24) return `${hours}小時前`;
@@ -870,28 +874,28 @@ const clampNumber = (value, min, max) => {
 const transformApiData = (apiData) =>
   apiData.map((item) => ({
     id: item.id,
-    org: item.name || '未命名單位',
-    address: item.address || '地址未提供',
-    phone: item.phone || '',
-    contact: item.contact || '',
-    status: item.status || 'active',
+    org: item.name || "未命名單位",
+    address: item.address || "地址未提供",
+    phone: item.phone || "",
+    contact: item.contact || "",
+    status: item.status || "active",
     needed_people: item.needed_people || 1,
-    notes: item.notes || '',
+    notes: item.notes || "",
     lng: item.lng || 0,
     lat: item.lat || 0,
-    map_link: item.map_link || '',
+    map_link: item.map_link || "",
     created_at: item.created_at || Math.floor(Date.now() / 1000),
     time: item.time || 0,
     items: item.supplies
       ? item.supplies
           .filter((supply) => supply != null)
           .map((supply) => ({
-            id: supply.id || '',
-            name: supply.name || '未命名物資',
-            type: supply.tag || '其他',
+            id: supply.id || "",
+            name: supply.name || "未命名物資",
+            type: supply.tag || "其他",
             need: supply.total_count || 1,
             got: supply.recieved_count || 0,
-            unit: supply.unit || '個',
+            unit: supply.unit || "個",
           }))
       : [],
   }));
@@ -922,7 +926,7 @@ const mergeRequestsByOrganization = (list) => {
 
 const transformToApiData = (frontendData) => {
   if (frontendData.items.length === 0) {
-    throw new Error('至少需要一個物資項目');
+    throw new Error("至少需要一個物資項目");
   }
   return {
     name: frontendData.org,
@@ -940,7 +944,7 @@ const transformToApiData = (frontendData) => {
 
 const parseApiResponse = (data) => {
   if (!data) return [];
-  if (data['@type'] === 'Collection' && Array.isArray(data.member)) {
+  if (data["@type"] === "Collection" && Array.isArray(data.member)) {
     return transformApiData(data.member);
   }
   if (Array.isArray(data)) {
@@ -971,9 +975,9 @@ const createRequest = async (payload) => {
   const promises = payload.items.map((item) => {
     const apiData = transformToApiData({ ...payload, items: [item] });
     return fetch(`${API_BASE_URL}/supplies`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(apiData),
     });
@@ -983,7 +987,9 @@ const createRequest = async (payload) => {
     const response = responses[i];
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`第 ${i + 1} 個物資新增失敗: HTTP ${response.status} - ${errorText}`);
+      throw new Error(
+        `第 ${i + 1} 個物資新增失敗: HTTP ${response.status} - ${errorText}`
+      );
     }
   }
 };
@@ -992,7 +998,7 @@ const updateDeliveryProgress = async (requestId, deliveryData) => {
   const merged = mergeRequestsByOrganization(requests.value);
   const req = merged.find((item) => item.id === requestId);
   if (!req) {
-    throw new Error('找不到指定的需求');
+    throw new Error("找不到指定的需求");
   }
   const deliveryBySupply = {};
   Object.entries(deliveryData).forEach(([indexStr, newGot]) => {
@@ -1010,9 +1016,9 @@ const updateDeliveryProgress = async (requestId, deliveryData) => {
   });
   const promises = Object.entries(deliveryBySupply).map(([supplyId, items]) =>
     fetch(`${API_BASE_URL}/supplies/${supplyId}`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(items),
     })
@@ -1037,11 +1043,11 @@ const adjustGoogleSitesHeight = () => {
 onMounted(() => {
   fetchRequests();
   adjustGoogleSitesHeight();
-  window.addEventListener('resize', adjustGoogleSitesHeight);
+  window.addEventListener("resize", adjustGoogleSitesHeight);
 });
 
 onUnmounted(() => {
-  window.removeEventListener('resize', adjustGoogleSitesHeight);
+  window.removeEventListener("resize", adjustGoogleSitesHeight);
 });
 
 watch(mergedRequests, () => {
@@ -1059,8 +1065,8 @@ watch(mergedRequests, () => {
 
 .page-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  justify-content: space-around;
+  align-items: center;
   flex-wrap: wrap;
   gap: 12px;
   padding: 24px;
@@ -1074,6 +1080,10 @@ watch(mergedRequests, () => {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.header-action {
+  align-self: center;
 }
 
 .page-header h1 {
@@ -1184,6 +1194,15 @@ watch(mergedRequests, () => {
   font-size: 0.85rem;
   font-weight: 600;
   color: #1f2937;
+  position: relative;
+}
+
+.section-title::before {
+  content: "";
+  display: block;
+  width: 100%;
+  border-top: 1px dashed #e2e8f0;
+  margin: 12px 0;
 }
 
 .contact-info {
@@ -1236,11 +1255,6 @@ watch(mergedRequests, () => {
   margin-top: 2px;
 }
 
-.card-divider {
-  margin: 8px 0 12px;
-  border-top: 1px dashed #e2e8f0;
-}
-
 .card-content {
   margin-top: 0;
   display: flex;
@@ -1249,23 +1263,20 @@ watch(mergedRequests, () => {
 }
 
 .item-row {
-  border-top: 1px dashed #e5e7eb;
-  padding-top: 12px;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.item-row:first-of-type {
-  border-top: none;
-  padding-top: 0;
+.item-row + .item-row {
+  border-top: 1px dashed #e5e7eb;
+  padding-top: 12px;
 }
 
 .item-row.is-fulfilled {
   background: #f3f4f6;
   border-radius: 12px;
   padding: 12px;
-  border-top: none;
 }
 
 .item-row.is-fulfilled + .item-row {
@@ -1303,6 +1314,8 @@ watch(mergedRequests, () => {
   flex-direction: column;
   font-size: 0.9rem;
   color: #4b5563;
+  gap: 4px;
+  width: 100%;
 }
 
 .need-number {
@@ -1350,6 +1363,26 @@ watch(mergedRequests, () => {
   margin-top: 4px;
   font-size: 0.8rem;
   color: #6b7280;
+}
+
+.policy-checkbox {
+  margin-top: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.policy-checkbox :deep(.el-checkbox__label) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.required-icon {
+  color: #ef4444;
+  font-weight: 700;
 }
 
 .materials-section {
@@ -1409,6 +1442,20 @@ watch(mergedRequests, () => {
 .add-item-button {
   width: 100%;
   margin-top: 4px;
+}
+
+@media (min-width: 768px) {
+  .item-description {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .item-description span:last-child {
+    text-align: right;
+    margin-right: 56px;
+  }
 }
 
 @media (max-width: 768px) {
