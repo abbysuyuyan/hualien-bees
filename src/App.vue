@@ -1288,7 +1288,6 @@ html {
 .card-main {
   display: flex;
   flex-direction: column;
-  gap: 16px;
   background: transparent;
 }
 
@@ -1501,8 +1500,8 @@ html {
 .card-stamp {
   position: absolute;
   top: 16px;
-  right: -24px;
-  transform: rotate(12deg);
+  right: 12px;
+  transform: rotate(10deg);
   padding: 6px 32px;
   font-weight: 700;
   border: 3px solid #22c55e;
