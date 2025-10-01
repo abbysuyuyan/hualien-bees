@@ -31,110 +31,143 @@
             :class="cardClasses(req)"
             :shadow="isCompleted(req) ? 'never' : 'hover'"
           >
-            <div class="card-header">
-              <div class="card-header-top">
-                <div class="card-title">
-                  <h2>{{ req.org }}</h2>
-                  <div class="tags">
-                    <el-tag
-                      v-for="tag in cardTags(req)"
-                      :key="tag.value"
-                      size="small"
-                      :style="{ backgroundColor: tag.color }"
-                      effect="dark"
-                    >
-                      {{ tag.label }}
-                    </el-tag>
-                    <el-tag
-                      size="small"
-                      :type="requestStatus(req).type"
-                      effect="dark"
-                    >
-                      {{ requestStatus(req).label }}
-                    </el-tag>
-                  </div>
-                </div>
-                <div class="published-at">
-                  <el-icon><Clock /></el-icon>
-                  <span class="meta-text"
-                    >發布 {{ formatTimeAgo(req.created_at) }}</span
-                  >
-                </div>
-              </div>
-            </div>
-
-            <div class="card-contact">
-              <div class="section-title">聯絡資訊</div>
-              <div class="contact-info">
-                <el-link
-                  class="contact-row contact-link contact-link-map"
-                  :href="mapLink(req.address)"
-                  target="_blank"
-                  :underline="true"
-                >
-                  <el-icon><Location /></el-icon>
-                  <span class="meta-text">{{ req.address }}</span>
-                  <el-icon class="contact-link-icon"><TopRight /></el-icon>
-                </el-link>
-                <el-link
-                  v-if="displayPhone(req)"
-                  class="contact-row contact-link contact-link-phone"
-                  :href="phoneHref(displayPhone(req))"
-                  :underline="false"
-                >
-                  <el-icon><Phone /></el-icon>
-                  <span class="meta-text">{{ displayPhone(req) }}</span>
-                </el-link>
-              </div>
-            </div>
-
-            <div class="card-content">
-              <div class="section-title">需求物資</div>
-              <div
-                v-for="(item, index) in req.items"
-                :key="`${req.id}-${index}`"
-                class="item-row"
-                :class="{ 'is-fulfilled': isItemFulfilled(item) }"
-              >
-                <div class="item-info">
-                  <div class="item-title">
-                    <span class="item-name">{{ item.name }}</span>
-                    <el-tag
-                      size="small"
-                      :style="{ backgroundColor: typeMeta(item.type).color }"
-                      effect="dark"
-                    >
-                      {{ typeMeta(item.type).label }}
-                    </el-tag>
-                  </div>
-                  <div class="item-description">
-                    <span>需求 {{ item.need }}{{ item.unit }}</span>
-                    <span>
-                      已收到 {{ item.got }}/{{ item.need
-                      }}{{ item.unit }}，還需要：
-                      <strong class="need-number"
-                        >{{ remainingNeed(item) }}{{ item.unit }}</strong
+            <div
+              class="card-main"
+              :class="{ 'is-clickable': isCompleted(req) }"
+              @click="handleCardClick(req)"
+            >
+              <div class="card-header">
+                <div class="card-header-top">
+                  <div class="card-title">
+                    <h2>{{ req.org }}</h2>
+                    <div class="tags">
+                      <el-tag
+                        v-for="tag in cardTags(req)"
+                        :key="tag.value"
+                        size="small"
+                        :style="{ backgroundColor: tag.color }"
+                        effect="dark"
                       >
-                    </span>
+                        {{ tag.label }}
+                      </el-tag>
+                      <el-tag
+                        size="small"
+                        :type="requestStatus(req).type"
+                        effect="dark"
+                      >
+                        {{ requestStatus(req).label }}
+                      </el-tag>
+                    </div>
+                  </div>
+                  <div class="published-at">
+                    <el-icon><Clock /></el-icon>
+                    <span class="meta-text"
+                      >發布 {{ formatTimeAgo(req.created_at) }}</span
+                    >
                   </div>
                 </div>
-                <el-progress
-                  :percentage="progressPercentage(item)"
-                  :status="itemProgressStatus(item)"
-                />
+              </div>
+
+              <div v-show="!isCompletedCollapsed(req)" class="card-body">
+                <div class="card-contact">
+                  <div class="section-title">聯絡資訊</div>
+                  <div class="contact-info">
+                    <el-link
+                      class="contact-row contact-link contact-link-map"
+                      :href="mapLink(req.address)"
+                      target="_blank"
+                      :underline="true"
+                      @click.stop
+                    >
+                      <el-icon><Location /></el-icon>
+                      <span class="meta-text">{{ req.address }}</span>
+                      <el-icon class="contact-link-icon"><TopRight /></el-icon>
+                    </el-link>
+                    <el-link
+                      v-if="displayPhone(req)"
+                      class="contact-row contact-link contact-link-phone"
+                      :href="phoneHref(displayPhone(req))"
+                      :underline="false"
+                      @click.stop
+                    >
+                      <el-icon><Phone /></el-icon>
+                      <span class="meta-text">{{ displayPhone(req) }}</span>
+                    </el-link>
+                  </div>
+                </div>
+
+                <div class="card-content">
+                  <div class="section-title">需求物資</div>
+                  <div
+                    v-for="(item, index) in req.items"
+                    :key="`${req.id}-${index}`"
+                    class="item-row"
+                    :class="{ 'is-fulfilled': isItemFulfilled(item) }"
+                  >
+                    <div class="item-info">
+                      <div class="item-title">
+                        <span class="item-name">{{ item.name }}</span>
+                        <el-tag
+                          size="small"
+                          :style="{
+                            backgroundColor: typeMeta(item.type).color,
+                          }"
+                          effect="dark"
+                        >
+                          {{ typeMeta(item.type).label }}
+                        </el-tag>
+                      </div>
+                      <div class="item-description">
+                        <span>需求 {{ item.need }}{{ item.unit }}</span>
+                        <span>
+                          已收到 {{ item.got }}/{{ item.need
+                          }}{{ item.unit }}，還需要：
+                          <strong class="need-number"
+                            >{{ remainingNeed(item) }}{{ item.unit }}</strong
+                          >
+                        </span>
+                      </div>
+                    </div>
+                    <el-progress
+                      :percentage="progressPercentage(item)"
+                      :status="itemProgressStatus(item)"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
             <template #footer>
-              <div class="card-actions">
-                <el-button
-                  type="primary"
-                  :icon="Van"
-                  :disabled="isCompleted(req)"
-                  @click="openDelivery(req)"
-                >
-                  我要配送
-                </el-button>
+              <div
+                class="card-footer"
+                :class="{ 'is-clickable': isCompleted(req) }"
+                @click="isCompleted(req) ? handleCardClick(req) : null"
+              >
+                <div v-if="!isCompleted(req)" class="card-actions">
+                  <el-button
+                    type="primary"
+                    :icon="Van"
+                    @click.stop="openDelivery(req)"
+                  >
+                    我要配送
+                  </el-button>
+                </div>
+                <div v-if="isCompleted(req)" class="completed-toggle">
+                  <el-button
+                    :class="[
+                      'completed-toggle-btn',
+                      { 'is-expanded': !isCompletedCollapsed(req) },
+                    ]"
+                    circle
+                    plain
+                    size="small"
+                    @click.stop="handleCardClick(req)"
+                  >
+                    <el-icon>
+                      <ArrowDown />
+                    </el-icon>
+                  </el-button>
+                </div>
               </div>
             </template>
 
@@ -473,6 +506,7 @@
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 import {
+  ArrowDown,
   Clock,
   Location,
   Phone,
@@ -506,6 +540,7 @@ const submitting = reactive({
 const createDialogVisible = ref(false);
 const createConfirmVisible = ref(false);
 const createPolicyAccepted = ref(false);
+const completedCollapsed = reactive({});
 const deliveryDialogVisible = ref(false);
 const deliveryConfirmVisible = ref(false);
 const deliverAllConfirmVisible = ref(false);
@@ -774,6 +809,7 @@ const cardTags = (req) => {
 const cardClasses = (req) => ({
   "is-completed": isCompleted(req),
   "has-medical": req.items.some((item) => item.type === "醫療用品"),
+  "is-collapsed": isCompletedCollapsed(req),
 });
 
 const displayPhone = (req) => {
@@ -821,6 +857,35 @@ const progressPercentage = (item) => {
 const itemProgressStatus = (item) => {
   if (remainingNeed(item) === 0) return "success";
   return "exception";
+};
+
+const syncCompletedCollapseState = () => {
+  const merged = mergeRequestsByOrganization(requests.value);
+  merged.forEach((req) => {
+    if (isCompleted(req)) {
+      if (completedCollapsed[req.id] === undefined) {
+        completedCollapsed[req.id] = true;
+      }
+    } else if (completedCollapsed[req.id] !== undefined) {
+      delete completedCollapsed[req.id];
+    }
+  });
+};
+
+const isCompletedCollapsed = (req) => {
+  if (!isCompleted(req)) return false;
+  const state = completedCollapsed[req.id];
+  return state === undefined ? true : state;
+};
+
+const toggleCompletedCollapse = (req) => {
+  if (!isCompleted(req)) return;
+  completedCollapsed[req.id] = !isCompletedCollapsed(req);
+};
+
+const handleCardClick = (req) => {
+  if (!isCompleted(req)) return;
+  toggleCompletedCollapse(req);
 };
 
 const formatTimeAgo = (timestamp) => {
@@ -963,6 +1028,7 @@ const fetchRequests = async () => {
     }
     const data = await response.json();
     requests.value = parseApiResponse(data);
+    syncCompletedCollapseState();
   } catch (error) {
     ElMessage.error(`無法載入需求資料: ${error.message}`);
   } finally {
@@ -1051,6 +1117,7 @@ onUnmounted(() => {
 });
 
 watch(mergedRequests, () => {
+  syncCompletedCollapseState();
   requestAnimationFrame(adjustGoogleSitesHeight);
 });
 </script>
@@ -1065,7 +1132,7 @@ watch(mergedRequests, () => {
 
 .page-header {
   display: flex;
-  justify-content: space-around;
+  justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
@@ -1125,8 +1192,13 @@ watch(mergedRequests, () => {
   border: 2px solid rgba(239, 68, 68, 0.35);
 }
 
+.request-card.is-completed.has-medical {
+  border: 2px solid rgba(239, 68, 68, 0.35);
+}
+
 .request-card.is-completed {
-  background: #f3f4f6;
+  background: #e2e8f0;
+  border: 1px solid #cbd5f5;
   cursor: default;
 }
 
@@ -1190,6 +1262,83 @@ watch(mergedRequests, () => {
   margin-top: 4px;
 }
 
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: transparent;
+}
+
+.card-main.is-clickable {
+  cursor: pointer;
+}
+
+.card-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  border-radius: 30px;
+}
+
+.request-card.is-completed :deep(.el-card__footer) {
+  padding: 0;
+}
+
+.card-footer.is-clickable {
+  cursor: pointer;
+}
+
+.completed-toggle {
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.completed-toggle-btn {
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background-color: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.completed-toggle-btn .el-icon {
+  font-size: 18px;
+  color: #334155;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.completed-toggle-btn.is-expanded .el-icon {
+  transform: rotate(180deg);
+}
+
+@media (hover: hover) {
+  .card-main.is-clickable:hover {
+    background: #f1f5f9;
+  }
+
+  .completed-toggle-btn:hover {
+    border-color: transparent;
+  }
+
+  .completed-toggle-btn:hover .el-icon,
+  .request-card.is-completed:hover .completed-toggle-btn .el-icon {
+    color: var(--el-color-primary);
+  }
+}
+
 .section-title {
   font-size: 0.85rem;
   font-weight: 600;
@@ -1222,9 +1371,11 @@ watch(mergedRequests, () => {
 }
 
 .contact-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   justify-content: flex-start;
   text-decoration: none;
-  width: 100%;
 }
 
 .contact-link-map {
@@ -1260,6 +1411,7 @@ watch(mergedRequests, () => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  background: transparent;
 }
 
 .item-row {
@@ -1600,5 +1752,17 @@ watch(mergedRequests, () => {
   .material-row {
     gap: 8px;
   }
+}
+
+.request-card.is-completed .card-main,
+.request-card.is-completed .card-header,
+.request-card.is-completed .card-header-top,
+.request-card.is-completed .card-body,
+.request-card.is-completed .card-content,
+.request-card.is-completed .card-footer,
+.request-card.is-completed .card-contact,
+.request-card.is-completed .item-row,
+.request-card.is-completed .card-actions {
+  background: #e2e8f0;
 }
 </style>
