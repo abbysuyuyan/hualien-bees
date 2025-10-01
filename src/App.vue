@@ -246,7 +246,7 @@
         </el-link>
         及
         <el-link
-          href="https://sites.google.com/view/guangfu250923/%E9%9A%B1%E7%A7%81%E6%AC%8A%E6%94%BF%E7%AD%96?authuser=0"
+          href="https://sites.google.com/view/guangfu250923/Policy?authuser=0"
           target="_blank"
           type="primary"
           :underline="false"
@@ -484,7 +484,7 @@ import {
 const API_BASE_URL = "https://guangfu250923.pttapp.cc";
 
 const TYPE_MAP = {
-  "食物/水": { label: "飲食", order: 0, color: "#ef4444" },
+  "食物/水": { label: "飲食", order: 0, color: "#14b8a6" },
   醫療用品: { label: "醫療用品", order: 1, color: "#f59e0b" },
   生活用品: { label: "生活用品", order: 2, color: "#22c55e" },
   大型機具: { label: "大型機具", order: 3, color: "#3b82f6" },
