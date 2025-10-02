@@ -5,9 +5,19 @@
         <h1>我要配送</h1>
       </div>
       <div class="header-right">
-        <el-button class="create-btn" type="primary" :icon="Plus" @click="openCreate">
+        <el-button
+          class="create-btn"
+          type="primary"
+          :icon="Plus"
+          @click="openCreate"
+        >
           新增物資需求
         </el-button>
+      </div>
+    </header>
+
+    <main class="page-main">
+      <div class="list-controls">
         <el-select
           v-model="selectedTag"
           class="tag-filter"
@@ -22,10 +32,12 @@
             :value="option.value"
           />
         </el-select>
-      </div>
-    </header>
 
-    <main class="page-main">
+        <el-checkbox v-model="showPendingOnly" class="pending-checkbox">
+          只顯示待配送物資
+        </el-checkbox>
+      </div>
+
       <el-skeleton v-if="loading" class="loading" :rows="6" animated />
 
       <template v-else>
@@ -197,18 +209,22 @@
           <el-skeleton :rows="1" animated />
         </div>
 
-        <div
-          v-else-if="!hasMore && visibleRequests.length > 0"
-          class="no-more"
-        >
-          已載入全部需求<span v-if="totalItems">（共 {{ totalItems }} 筆）</span>
+        <div v-else-if="!hasMore && visibleRequests.length > 0" class="no-more">
+          已載入全部需求<span v-if="totalItems"
+            >（共 {{ totalItems }} 筆）</span
+          >
         </div>
 
         <div
           v-if="!supportsIntersectionObserver && hasMore && !loadingMore"
           class="load-more-fallback"
         >
-          <el-button type="primary" plain size="small" @click="loadMoreRequests">
+          <el-button
+            type="primary"
+            plain
+            size="small"
+            @click="loadMoreRequests"
+          >
             載入更多
           </el-button>
         </div>
@@ -597,6 +613,7 @@ const submitting = reactive({
 });
 
 const selectedTag = ref("");
+const showPendingOnly = ref(false);
 const tagFilterOptions = computed(() => [
   { value: "", label: "全部類別" },
   ...typeOptions,
@@ -862,11 +879,16 @@ const mergedRequests = computed(() => {
 });
 
 const visibleRequests = computed(() => {
-  const list = mergedRequests.value;
-  if (!selectedTag.value) return list;
-  return list.filter((req) =>
-    req.items.some((item) => item.type === selectedTag.value)
-  );
+  let list = mergedRequests.value;
+  if (selectedTag.value) {
+    list = list.filter((req) =>
+      req.items.some((item) => item.type === selectedTag.value)
+    );
+  }
+  if (showPendingOnly.value) {
+    list = list.filter((req) => requestStatus(req).label === "尚缺");
+  }
+  return list;
 });
 
 const cardTags = (req) => {
@@ -1131,9 +1153,7 @@ const fetchRequests = async ({ append = false } = {}) => {
   if (loading.value || loadingMore.value) return;
 
   const baseUrl = `${API_BASE_URL}/supplies?embed=all&limit=50&offset=0`;
-  const targetUrl = append
-    ? normalizeNextUrl(nextPageUrl.value)
-    : baseUrl;
+  const targetUrl = append ? normalizeNextUrl(nextPageUrl.value) : baseUrl;
 
   if (!targetUrl) return;
 
@@ -1303,6 +1323,10 @@ watch(selectedTag, () => {
   requestAnimationFrame(adjustGoogleSitesHeight);
 });
 
+watch(showPendingOnly, () => {
+  requestAnimationFrame(adjustGoogleSitesHeight);
+});
+
 watch(
   () => loadMoreTrigger.value,
   (el, prev) => {
@@ -1384,6 +1408,24 @@ html {
 .page-main {
   flex: 1;
   padding: 0 24px 24px;
+}
+
+.list-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 48px;
+  max-width: 720px;
+  margin: 0 auto 16px;
+}
+
+.list-controls .tag-filter {
+  min-width: 200px;
+}
+
+.pending-checkbox {
+  margin: 0;
+  white-space: nowrap;
 }
 
 .loading {
@@ -2007,12 +2049,30 @@ html {
     border-radius: 0;
   }
 
+  .list-controls {
+    padding: 0 12px;
+  }
+
   .material-row {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 640px) {
+  .list-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .list-controls .tag-filter {
+    width: 100%;
+  }
+
+  .pending-checkbox {
+    align-self: flex-start;
+  }
+
   .page-header {
     padding: 16px;
     flex-direction: column;
@@ -2022,6 +2082,13 @@ html {
 
   .page-main {
     padding: 0;
+  }
+
+  .list-controls {
+    max-width: 100%;
+    margin: 0 0 16px;
+    padding: 0 32px;
+    box-sizing: border-box;
   }
 
   .cards-grid {
