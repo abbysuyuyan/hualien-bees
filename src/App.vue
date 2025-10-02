@@ -29,12 +29,7 @@
       <el-skeleton v-if="loading" class="loading" :rows="6" animated />
 
       <template v-else>
-        <el-empty
-          v-if="visibleRequests.length === 0"
-          description="目前沒有物資需求"
-        />
-
-        <div v-else class="cards-grid">
+        <div v-if="visibleRequests.length > 0" class="cards-grid">
           <el-card
             v-for="req in visibleRequests"
             :key="req.id"
@@ -184,6 +179,38 @@
 
             <div v-if="isCompleted(req)" class="card-stamp">已完成</div>
           </el-card>
+        </div>
+
+        <div v-else-if="loadingMore || hasMore" class="loading-placeholder">
+          <el-skeleton :rows="1" animated />
+        </div>
+
+        <el-empty v-else description="目前沒有物資需求" />
+
+        <div
+          v-if="supportsIntersectionObserver"
+          ref="loadMoreTrigger"
+          class="infinite-scroll-trigger"
+        />
+
+        <div v-if="loadingMore" class="loading-more">
+          <el-skeleton :rows="1" animated />
+        </div>
+
+        <div
+          v-else-if="!hasMore && visibleRequests.length > 0"
+          class="no-more"
+        >
+          已載入全部需求<span v-if="totalItems">（共 {{ totalItems }} 筆）</span>
+        </div>
+
+        <div
+          v-if="!supportsIntersectionObserver && hasMore && !loadingMore"
+          class="load-more-fallback"
+        >
+          <el-button type="primary" plain size="small" @click="loadMoreRequests">
+            載入更多
+          </el-button>
         </div>
       </template>
     </main>
@@ -556,6 +583,14 @@ const typeOptions = Object.keys(TYPE_MAP).map((value) => ({
 
 const requests = ref([]);
 const loading = ref(false);
+const loadingMore = ref(false);
+const nextPageUrl = ref(null);
+const totalItems = ref(0);
+const loadMoreTrigger = ref(null);
+const supportsIntersectionObserver =
+  typeof window !== "undefined" && "IntersectionObserver" in window;
+let infiniteObserver;
+
 const submitting = reactive({
   create: false,
   delivery: false,
@@ -566,6 +601,7 @@ const tagFilterOptions = computed(() => [
   { value: "", label: "全部類別" },
   ...typeOptions,
 ]);
+const hasMore = computed(() => Boolean(nextPageUrl.value));
 
 const createDialogVisible = ref(false);
 const createConfirmVisible = ref(false);
@@ -1046,31 +1082,102 @@ const transformToApiData = (frontendData) => {
 };
 
 const parseApiResponse = (data) => {
-  if (!data) return [];
+  if (!data) {
+    return {
+      items: [],
+      next: null,
+      previous: null,
+      totalItems: 0,
+      limit: 0,
+      offset: 0,
+    };
+  }
   if (data["@type"] === "Collection" && Array.isArray(data.member)) {
-    return transformApiData(data.member);
+    return {
+      items: transformApiData(data.member),
+      next: data.next ?? null,
+      previous: data.previous ?? null,
+      totalItems: data.totalItems ?? data.member.length ?? 0,
+      limit: data.limit ?? 0,
+      offset: data.offset ?? 0,
+    };
   }
   if (Array.isArray(data)) {
-    return transformApiData(data);
+    return {
+      items: transformApiData(data),
+      next: null,
+      previous: null,
+      totalItems: data.length,
+      limit: data.length,
+      offset: 0,
+    };
   }
-  return transformApiData([data]);
+  return {
+    items: transformApiData([data]),
+    next: null,
+    previous: null,
+    totalItems: 1,
+    limit: 1,
+    offset: 0,
+  };
 };
 
-const fetchRequests = async () => {
-  loading.value = true;
+const normalizeNextUrl = (url) => {
+  if (!url) return null;
+  return /^https?:/i.test(url) ? url : `${API_BASE_URL}${url}`;
+};
+
+const fetchRequests = async ({ append = false } = {}) => {
+  if (loading.value || loadingMore.value) return;
+
+  const baseUrl = `${API_BASE_URL}/supplies?embed=all&limit=50&offset=0`;
+  const targetUrl = append
+    ? normalizeNextUrl(nextPageUrl.value)
+    : baseUrl;
+
+  if (!targetUrl) return;
+
+  if (append) {
+    loadingMore.value = true;
+  } else {
+    loading.value = true;
+  }
+
   try {
-    const response = await fetch(`${API_BASE_URL}/supplies?embed=all`);
+    const response = await fetch(targetUrl);
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`HTTP ${response.status} - ${errorText}`);
     }
     const data = await response.json();
-    requests.value = parseApiResponse(data);
+    const parsed = parseApiResponse(data);
+    const mergedItems = append
+      ? [...requests.value, ...parsed.items]
+      : parsed.items;
+    const deduped = [];
+    const seen = new Set();
+    mergedItems.forEach((item) => {
+      if (!item?.id || !seen.has(item.id)) {
+        if (item?.id) seen.add(item.id);
+        deduped.push(item);
+      }
+    });
+    requests.value = deduped;
+    nextPageUrl.value = normalizeNextUrl(parsed.next);
+    totalItems.value = Math.max(
+      parsed.totalItems ?? deduped.length,
+      deduped.length
+    );
     syncCompletedCollapseState();
   } catch (error) {
-    ElMessage.error(`無法載入需求資料: ${error.message}`);
+    const message = append ? "無法載入更多資料" : "無法載入需求資料";
+    ElMessage.error(`${message}: ${error.message}`);
   } finally {
-    loading.value = false;
+    if (append) {
+      loadingMore.value = false;
+    } else {
+      loading.value = false;
+    }
     requestAnimationFrame(adjustGoogleSitesHeight);
   }
 };
@@ -1144,14 +1251,47 @@ const adjustGoogleSitesHeight = () => {
   document.body.style.minHeight = `${minHeight}px`;
 };
 
+const loadMoreRequests = () => {
+  if (!hasMore.value || loading.value || loadingMore.value) return;
+  fetchRequests({ append: true });
+};
+
+const ensureObserver = () => {
+  if (!supportsIntersectionObserver) return null;
+  if (infiniteObserver) return infiniteObserver;
+  infiniteObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          loadMoreRequests();
+        }
+      });
+    },
+    {
+      root: null,
+      rootMargin: "256px 0px",
+      threshold: 0.01,
+    }
+  );
+  return infiniteObserver;
+};
+
+const teardownObserver = () => {
+  if (!infiniteObserver) return;
+  infiniteObserver.disconnect();
+  infiniteObserver = null;
+};
+
 onMounted(() => {
   fetchRequests();
   adjustGoogleSitesHeight();
   window.addEventListener("resize", adjustGoogleSitesHeight);
+  ensureObserver();
 });
 
 onUnmounted(() => {
   window.removeEventListener("resize", adjustGoogleSitesHeight);
+  teardownObserver();
 });
 
 watch(mergedRequests, () => {
@@ -1161,6 +1301,31 @@ watch(mergedRequests, () => {
 
 watch(selectedTag, () => {
   requestAnimationFrame(adjustGoogleSitesHeight);
+});
+
+watch(
+  () => loadMoreTrigger.value,
+  (el, prev) => {
+    const observer = ensureObserver();
+    if (!observer) return;
+    if (prev) observer.unobserve(prev);
+    if (el && hasMore.value) {
+      observer.observe(el);
+    }
+  },
+  { flush: "post" }
+);
+
+watch(hasMore, (value) => {
+  const observer = ensureObserver();
+  if (!observer) return;
+  const target = loadMoreTrigger.value;
+  if (!target) return;
+  if (value) {
+    observer.observe(target);
+  } else {
+    observer.unobserve(target);
+  }
 });
 </script>
 
@@ -1223,6 +1388,30 @@ html {
 
 .loading {
   margin-top: 48px;
+}
+
+.loading-placeholder,
+.loading-more {
+  max-width: 520px;
+  margin: 32px auto 0;
+}
+
+.no-more {
+  text-align: center;
+  color: #64748b;
+  margin: 24px 0 48px;
+  font-size: 0.95rem;
+}
+
+.infinite-scroll-trigger {
+  width: 100%;
+  height: 1px;
+}
+
+.load-more-fallback {
+  display: flex;
+  justify-content: center;
+  margin: 24px 0 48px;
 }
 
 .cards-grid {
