@@ -13,6 +13,10 @@
         >
           新增物資需求
         </el-button>
+        <p class="header-note">
+          <span class="outline-icon note-icon">!</span>
+          此網頁不提供物資捐贈，僅支援當地災民需求、蜜蜂配送！
+        </p>
       </div>
     </header>
 
@@ -1386,8 +1390,9 @@ html {
 
 .header-right {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
 }
 
 .tag-filter {
@@ -1400,9 +1405,40 @@ html {
 }
 
 .header-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
   font-size: 0.9rem;
   color: #f87171;
   font-weight: 500;
+  text-align: left;
+}
+
+.outline-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.create-btn-icon {
+  margin-right: 8px;
+}
+
+.header-note .note-icon {
+  flex-shrink: 0;
+  font-size: 12px;
+  width: 16px;
+  height: 16px;
+  align-self: center;
+  justify-self: center;
 }
 
 .page-main {
@@ -2078,6 +2114,10 @@ html {
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
+  }
+
+  .header-right {
+    align-items: flex-start;
   }
 
   .page-main {
