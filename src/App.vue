@@ -1801,7 +1801,7 @@ html {
 
 .card-stamp {
   position: absolute;
-  top: 16px;
+  bottom: 16px;
   right: 12px;
   transform: rotate(10deg);
   padding: 6px 32px;
