@@ -330,12 +330,12 @@
       <el-checkbox v-model="createPolicyAccepted" class="policy-checkbox">
         <span class="required-icon">*</span>我已理解本平台
         <el-link
-          href="https://docs.google.com/document/d/1JOjahSi5om1Gx4mydQ8FiOzZMVwLGimY5NPz6-BWZKw/edit?usp=sharing"
+          href="https://sites.google.com/view/guangfu250923/Terms-of-Service?authuser=0"
           target="_blank"
           type="primary"
           :underline="false"
         >
-          服務政策
+          服務條款
         </el-link>
         及
         <el-link
@@ -344,7 +344,7 @@
           type="primary"
           :underline="false"
         >
-          隱私權條款
+          隱私權政策
         </el-link>
         之使用
       </el-checkbox>
