@@ -244,6 +244,7 @@
       v-model="createDialogVisible"
       title="物資需求"
       class="dialog-responsive"
+      :style="{ maxHeight: '70vh', overflow: 'auto' }"
       @closed="onCreateClosed"
     >
       <el-form label-position="top" class="form-grid">
@@ -366,6 +367,7 @@
       v-model="createConfirmVisible"
       title="確認新增"
       class="dialog-responsive dialog-confirm"
+      :style="{ maxHeight: '70vh', overflow: 'auto' }"
     >
       <el-descriptions border :column="1" size="small">
         <el-descriptions-item label="單位名稱">
