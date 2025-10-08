@@ -121,7 +121,7 @@
                 <div class="card-content">
                   <div class="section-title">需求物資</div>
                   <div
-                    v-for="(item, index) in req.items"
+                    v-for="({ item, index }) in pendingItems(req)"
                     :key="`${req.id}-${index}`"
                     class="item-row"
                     :class="{ 'is-fulfilled': isItemFulfilled(item) }"
@@ -154,6 +154,82 @@
                       :percentage="progressPercentage(item)"
                       :status="itemProgressStatus(item)"
                     />
+                  </div>
+
+                  <div
+                    v-if="
+                      pendingItems(req).length === 0 &&
+                      fulfilledItems(req).length > 0
+                    "
+                    class="all-fulfilled-hint"
+                  >
+                    全部物資已完成，以下為各項紀錄
+                  </div>
+
+                  <div v-if="fulfilledItems(req).length > 0" class="fulfilled-items">
+                    <div class="fulfilled-header">
+                      <span class="fulfilled-title"
+                        >已完成物資（{{ fulfilledItems(req).length }}）</span
+                      >
+                      <el-button
+                        text
+                        size="small"
+                        class="fulfilled-toggle-btn"
+                        @click.stop="toggleFulfilledCollapse(req)"
+                      >
+                        <span>{{
+                          isFulfilledCollapsed(req) ? "展開" : "收合"
+                        }}</span>
+                        <el-icon
+                          :class="[
+                            'fulfilled-toggle-icon',
+                            { 'is-open': !isFulfilledCollapsed(req) },
+                          ]"
+                        >
+                          <ArrowDown />
+                        </el-icon>
+                      </el-button>
+                    </div>
+
+                    <div
+                      v-show="!isFulfilledCollapsed(req)"
+                      class="fulfilled-list"
+                    >
+                      <div
+                        v-for="({ item, index }) in fulfilledItems(req)"
+                        :key="`fulfilled-${req.id}-${index}`"
+                        class="item-row is-fulfilled"
+                      >
+                        <div class="item-info">
+                          <div class="item-title">
+                            <span class="item-name">{{ item.name }}</span>
+                            <el-tag
+                              size="small"
+                              :style="{
+                                backgroundColor: typeMeta(item.type).color,
+                              }"
+                              effect="dark"
+                            >
+                              {{ typeMeta(item.type).label }}
+                            </el-tag>
+                          </div>
+                          <div class="item-description">
+                            <span>需求 {{ item.need }}{{ item.unit }}</span>
+                            <span>
+                              已收到 {{ item.got }}/{{ item.need
+                              }}{{ item.unit }}，還需要：
+                              <strong class="need-number"
+                                >{{ remainingNeed(item) }}{{ item.unit }}</strong
+                              >
+                            </span>
+                          </div>
+                        </div>
+                        <el-progress
+                          :percentage="progressPercentage(item)"
+                          :status="itemProgressStatus(item)"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -630,6 +706,7 @@ const createDialogVisible = ref(false);
 const createConfirmVisible = ref(false);
 const createPolicyAccepted = ref(false);
 const completedCollapsed = reactive({});
+const fulfilledCollapsed = reactive({});
 const deliveryDialogVisible = ref(false);
 const deliveryConfirmVisible = ref(false);
 const deliverAllConfirmVisible = ref(false);
@@ -947,6 +1024,19 @@ const typeMeta = (type) => TYPE_MAP[type] ?? TYPE_MAP["其他"];
 
 const remainingNeed = (item) => Math.max(0, (item.need ?? 0) - (item.got ?? 0));
 
+const decorateRequestItems = (req) =>
+  req.items.map((item, index) => ({
+    item,
+    index,
+    remaining: remainingNeed(item),
+  }));
+
+const pendingItems = (req) =>
+  decorateRequestItems(req).filter(({ remaining }) => remaining > 0);
+
+const fulfilledItems = (req) =>
+  decorateRequestItems(req).filter(({ remaining }) => remaining === 0);
+
 const isItemFulfilled = (item) => remainingNeed(item) === 0;
 
 const progressPercentage = (item) => {
@@ -961,15 +1051,37 @@ const itemProgressStatus = (item) => {
   return "exception";
 };
 
-const syncCompletedCollapseState = () => {
-  const merged = mergeRequestsByOrganization(requests.value);
-  merged.forEach((req) => {
+const isFulfilledCollapsed = (req) => {
+  if (!fulfilledItems(req).length) return true;
+  const state = fulfilledCollapsed[req.id];
+  return state === undefined ? true : state;
+};
+
+const toggleFulfilledCollapse = (req) => {
+  if (!fulfilledItems(req).length) return;
+  fulfilledCollapsed[req.id] = !isFulfilledCollapsed(req);
+};
+
+const syncCompletedCollapseState = (list = mergedRequests.value) => {
+  list.forEach((req) => {
     if (isCompleted(req)) {
       if (completedCollapsed[req.id] === undefined) {
         completedCollapsed[req.id] = true;
       }
     } else if (completedCollapsed[req.id] !== undefined) {
       delete completedCollapsed[req.id];
+    }
+  });
+};
+
+const syncFulfilledCollapseState = (list = mergedRequests.value) => {
+  list.forEach((req) => {
+    if (fulfilledItems(req).length > 0) {
+      if (fulfilledCollapsed[req.id] === undefined) {
+        fulfilledCollapsed[req.id] = true;
+      }
+    } else if (fulfilledCollapsed[req.id] !== undefined) {
+      delete fulfilledCollapsed[req.id];
     }
   });
 };
@@ -1195,6 +1307,7 @@ const fetchRequests = async ({ append = false } = {}) => {
       deduped.length
     );
     syncCompletedCollapseState();
+    syncFulfilledCollapseState();
   } catch (error) {
     const message = append ? "無法載入更多資料" : "無法載入需求資料";
     ElMessage.error(`${message}: ${error.message}`);
@@ -1321,7 +1434,9 @@ onUnmounted(() => {
 });
 
 watch(mergedRequests, () => {
-  syncCompletedCollapseState();
+  const list = mergedRequests.value;
+  syncCompletedCollapseState(list);
+  syncFulfilledCollapseState(list);
   requestAnimationFrame(adjustGoogleSitesHeight);
 });
 
@@ -1732,6 +1847,55 @@ html {
   flex-direction: column;
   gap: 12px;
   background: transparent;
+}
+
+.all-fulfilled-hint {
+  font-size: 14px;
+  color: #6b7280;
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.fulfilled-items {
+  border-top: 1px dashed #e5e7eb;
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fulfilled-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.fulfilled-title {
+  font-weight: 500;
+}
+
+.fulfilled-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #0f766e;
+}
+
+.fulfilled-toggle-icon {
+  transition: transform 0.2s ease;
+}
+
+.fulfilled-toggle-icon.is-open {
+  transform: rotate(180deg);
+}
+
+.fulfilled-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .item-row {
