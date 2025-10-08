@@ -407,7 +407,7 @@
       <el-checkbox v-model="createPolicyAccepted" class="policy-checkbox">
         <span class="required-icon">*</span>我已理解本平台
         <el-link
-          href="https://sites.google.com/view/guangfu250923/Terms-of-Service?authuser=0"
+          href="https://gf250923.org/terms"
           target="_blank"
           type="primary"
           :underline="false"
@@ -416,7 +416,7 @@
         </el-link>
         及
         <el-link
-          href="https://sites.google.com/view/guangfu250923/Policy?authuser=0"
+          href="https://gf250923.org/privacy"
           target="_blank"
           type="primary"
           :underline="false"
