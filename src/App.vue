@@ -92,7 +92,7 @@
 
               <div v-show="!isCompletedCollapsed(req)" class="card-body">
                 <div class="card-contact">
-                  <div class="section-title">聯絡資訊</div>
+                  <div class="section-title">聯絡災民</div>
                   <div class="contact-info">
                     <el-link
                       class="contact-row contact-link contact-link-map"
@@ -118,10 +118,76 @@
                   </div>
                 </div>
 
+                <div
+                  v-if="stationsForRequest(req).length"
+                  class="card-stations"
+                >
+                  <div class="section-title">物資站</div>
+                  <div class="station-scroll">
+                    <div
+                      v-for="station in stationsForRequest(req)"
+                      :key="station.id"
+                      class="station-card"
+                    >
+                      <div class="station-header">
+                        <span class="station-name">{{ station.name }}</span>
+
+                        <div class="station-links">
+                          <el-link
+                            v-if="station.address"
+                            class="station-link"
+                            :href="mapLink(station.address)"
+                            target="_blank"
+                            :underline="false"
+                            @click.stop
+                          >
+                            <el-icon><Location /></el-icon>
+                            <span>{{ station.address }}</span>
+                            <el-icon class="contact-link-icon"><TopRight /></el-icon>
+                          </el-link>
+                          <el-link
+                            v-if="station.phone"
+                            class="station-link"
+                            :href="phoneHref(station.phone)"
+                            :underline="false"
+                            @click.stop
+                          >
+                            <el-icon><Phone /></el-icon>
+                            <span>{{ station.phone }}</span>
+                          </el-link>
+                        </div>
+                      </div>
+
+                      <div
+                        v-if="station.supplies?.length"
+                        class="station-supplies"
+                      >
+                        <div class="station-supplies-title">可支援物資</div>
+                        <ul class="station-supplies-list">
+                          <li
+                            v-for="supply in station.supplies"
+                            :key="`${station.id}-${supply.id}`"
+                            class="station-supply-row"
+                          >
+                            <span class="supply-name">{{ supply.name }}</span>
+                            <span class="supply-count"
+                              >{{ supply.count }}{{ supply.unit }}</span
+                            >
+                          </li>
+                        </ul>
+                      </div>
+
+                      <div v-else class="station-supplies-empty">
+                        暫無物資資訊
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div class="card-content">
                   <div class="section-title">需求物資</div>
                   <div
-                    v-for="({ item, index }) in pendingItems(req)"
+                    v-for="{ item, index } in pendingItems(req)"
                     :key="`${req.id}-${index}`"
                     class="item-row"
                     :class="{ 'is-fulfilled': isItemFulfilled(item) }"
@@ -166,7 +232,10 @@
                     全部物資已完成，以下為各項紀錄
                   </div>
 
-                  <div v-if="fulfilledItems(req).length > 0" class="fulfilled-items">
+                  <div
+                    v-if="fulfilledItems(req).length > 0"
+                    class="fulfilled-items"
+                  >
                     <div class="fulfilled-header">
                       <span class="fulfilled-title"
                         >已完成物資（{{ fulfilledItems(req).length }}）</span
@@ -196,7 +265,7 @@
                       class="fulfilled-list"
                     >
                       <div
-                        v-for="({ item, index }) in fulfilledItems(req)"
+                        v-for="{ item, index } in fulfilledItems(req)"
                         :key="`fulfilled-${req.id}-${index}`"
                         class="item-row is-fulfilled"
                       >
@@ -219,7 +288,8 @@
                               已收到 {{ item.got }}/{{ item.need
                               }}{{ item.unit }}，還需要：
                               <strong class="need-number"
-                                >{{ remainingNeed(item) }}{{ item.unit }}</strong
+                                >{{ remainingNeed(item)
+                                }}{{ item.unit }}</strong
                               >
                             </span>
                           </div>
@@ -684,6 +754,7 @@ const loading = ref(false);
 const loadingMore = ref(false);
 const nextPageUrl = ref(null);
 const totalItems = ref(0);
+const stationCatalog = ref([]);
 const loadMoreTrigger = ref(null);
 const supportsIntersectionObserver =
   typeof window !== "undefined" && "IntersectionObserver" in window;
@@ -1037,6 +1108,11 @@ const pendingItems = (req) =>
 const fulfilledItems = (req) =>
   decorateRequestItems(req).filter(({ remaining }) => remaining === 0);
 
+const stationsForRequest = (req) => {
+  if (req?.stations?.length) return req.stations;
+  return stationCatalog.value;
+};
+
 const isItemFulfilled = (item) => remainingNeed(item) === 0;
 
 const progressPercentage = (item) => {
@@ -1150,6 +1226,82 @@ const clampNumber = (value, min, max) => {
   return Math.max(min, Math.min(max, num));
 };
 
+const transformStationSupplies = (supplies) =>
+  (Array.isArray(supplies) ? supplies : [])
+    .filter((supply) => supply != null)
+    .map((supply, index) => ({
+      id: supply.id || `station-supply-${index}`,
+      name: supply.name || "未命名物資",
+      count: Number.isFinite(Number(supply.count))
+        ? Number(supply.count)
+        : Number.isFinite(Number(supply.total_count))
+        ? Number(supply.total_count)
+        : 0,
+      unit: supply.unit || "個",
+    }));
+
+const transformStations = (stations) =>
+  (Array.isArray(stations) ? stations : [])
+    .filter((station) => station != null)
+    .map((station, index) => ({
+      id: station.id || `station-${index}`,
+      name: station.name || "未命名物資站",
+      address: station.address || "地址未提供",
+      phone: station.phone || "",
+      supplies: transformStationSupplies(station.supplies),
+    }));
+
+const mergeStationLists = (baseStations = [], incomingStations = []) => {
+  const makeKey = (station) =>
+    station.id || `${station.name}|${station.address}|${station.phone}`;
+  const merged = new Map();
+
+  const appendStation = (station) => {
+    const key = makeKey(station);
+    if (!merged.has(key)) {
+      merged.set(key, {
+        ...station,
+        supplies: [...(station.supplies || [])],
+      });
+      return;
+    }
+    const existing = merged.get(key);
+    const supplyKey = (supply, index) =>
+      supply.id || `${supply.name}|${supply.unit}|${index}`;
+    const supplyMap = new Map(
+      (existing.supplies || []).map((supply, index) => [
+        supplyKey(supply, index),
+        { ...supply },
+      ])
+    );
+    (station.supplies || []).forEach((supply, index) => {
+      const key = supplyKey(supply, index);
+      if (!supplyMap.has(key)) {
+        supplyMap.set(key, { ...supply });
+      } else {
+        const current = supplyMap.get(key);
+        current.count = Math.max(
+          Number.isFinite(current.count) ? current.count : 0,
+          Number.isFinite(supply.count) ? supply.count : 0
+        );
+        if (!current.unit && supply.unit) {
+          current.unit = supply.unit;
+        }
+      }
+    });
+    existing.supplies = Array.from(supplyMap.values());
+    if (!existing.address && station.address) {
+      existing.address = station.address;
+    }
+    if (!existing.phone && station.phone) {
+      existing.phone = station.phone;
+    }
+  };
+
+  [...baseStations, ...incomingStations].forEach(appendStation);
+  return Array.from(merged.values());
+};
+
 const transformApiData = (apiData) =>
   apiData.map((item) => ({
     id: item.id,
@@ -1177,6 +1329,7 @@ const transformApiData = (apiData) =>
             unit: supply.unit || "個",
           }))
       : [],
+    stations: transformStations(item.station),
   }));
 
 const mergeRequestsByOrganization = (list) => {
@@ -1190,6 +1343,7 @@ const mergeRequestsByOrganization = (list) => {
     if (mergedMap.has(key)) {
       const existing = mergedMap.get(key);
       existing.items.push(...itemsWithSupplyId);
+      existing.stations = mergeStationLists(existing.stations, req.stations);
       if (req.created_at > existing.created_at) {
         existing.created_at = req.created_at;
       }
@@ -1197,6 +1351,7 @@ const mergeRequestsByOrganization = (list) => {
       mergedMap.set(key, {
         ...req,
         items: itemsWithSupplyId,
+        stations: [...(req.stations || [])],
       });
     }
   });
@@ -1230,6 +1385,7 @@ const parseApiResponse = (data) => {
       totalItems: 0,
       limit: 0,
       offset: 0,
+      stations: [],
     };
   }
   if (data["@type"] === "Collection" && Array.isArray(data.member)) {
@@ -1240,6 +1396,7 @@ const parseApiResponse = (data) => {
       totalItems: data.totalItems ?? data.member.length ?? 0,
       limit: data.limit ?? 0,
       offset: data.offset ?? 0,
+      stations: transformStations(data.station),
     };
   }
   if (Array.isArray(data)) {
@@ -1250,6 +1407,7 @@ const parseApiResponse = (data) => {
       totalItems: data.length,
       limit: data.length,
       offset: 0,
+      stations: transformStations(data.station),
     };
   }
   return {
@@ -1259,6 +1417,7 @@ const parseApiResponse = (data) => {
     totalItems: 1,
     limit: 1,
     offset: 0,
+    stations: transformStations(data.station),
   };
 };
 
@@ -1301,6 +1460,11 @@ const fetchRequests = async ({ append = false } = {}) => {
       }
     });
     requests.value = deduped;
+    if (Array.isArray(parsed.stations)) {
+      if (!append || parsed.stations.length > 0) {
+        stationCatalog.value = parsed.stations;
+      }
+    }
     nextPageUrl.value = normalizeNextUrl(parsed.next);
     totalItems.value = Math.max(
       parsed.totalItems ?? deduped.length,
@@ -1847,6 +2011,108 @@ html {
   flex-direction: column;
   gap: 12px;
   background: transparent;
+}
+
+.card-stations {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.station-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.station-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.station-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.station-name {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.station-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+
+.station-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #0f766e;
+}
+
+.station-link :deep(.el-icon) {
+  font-size: 16px;
+}
+
+.station-supplies {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.station-supplies-title {
+  font-size: 0.8rem;
+  color: #475569;
+  font-weight: 500;
+}
+
+.station-supplies-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.station-supply-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #334155;
+}
+
+.station-supply-row + .station-supply-row {
+  border-top: 1px dashed #e2e8f0;
+  padding-top: 6px;
+}
+
+.supply-name {
+  font-weight: 500;
+}
+
+.supply-count {
+  color: #1e3a8a;
+  font-weight: 600;
+}
+
+.station-supplies-empty {
+  font-size: 0.8rem;
+  color: #94a3b8;
 }
 
 .all-fulfilled-hint {
