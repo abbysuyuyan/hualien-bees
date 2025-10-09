@@ -1397,6 +1397,7 @@ const fetchSupplyProviders = async (supplyItemId) => {
   if (providersLoading.has(supplyItemId)) return [];
   providersLoading.add(supplyItemId);
   try {
+    /*
     const url = `${API_BASE_URL}/supply_providers?supply_item_id=${encodeURIComponent(
       supplyItemId
     )}`;
@@ -1408,6 +1409,11 @@ const fetchSupplyProviders = async (supplyItemId) => {
       }
       const errorText = await response.text();
       throw new Error(`HTTP ${response.status} - ${errorText}`);
+    }
+    */
+    {
+      supplyProviders[supplyItemId] = [];
+      return [];
     }
     const data = await response.json();
     const providers = parseSupplyProvidersResponse(data);
