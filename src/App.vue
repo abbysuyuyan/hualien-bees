@@ -15,7 +15,7 @@
         </el-button>
         <p class="header-note">
           <span class="outline-icon note-icon">!</span>
-          此網頁不提供物資捐贈，僅支援當地災民需求、蜜蜂配送！
+          此網頁不提供物資捐贈，僅支援當地居民需求、蜜蜂配送！
         </p>
       </div>
     </header>
@@ -178,7 +178,7 @@
                 </div>
 
                 <div class="card-contact">
-                  <div class="section-title">災民聯絡</div>
+                  <div class="section-title">居民聯絡</div>
                   <div class="contact-info">
                     <el-link
                       class="contact-row contact-link contact-link-map"
