@@ -91,7 +91,7 @@
               </div>
 
               <div v-show="!isCompletedCollapsed(req)" class="card-body">
-                <div class="card-stations">
+                <div v-if="!isCompleted(req)" class="card-stations">
                   <div class="section-title">物資站聯絡</div>
                   <div
                     v-if="stationsForRequest(req).length"
