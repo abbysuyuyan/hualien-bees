@@ -146,11 +146,23 @@
                         <div class="station-supplies-title">可支援物資</div>
                         <ul class="station-supplies-list">
                           <li
-                            v-for="supplyName in station.supplies"
-                            :key="`${station.id}-${supplyName}`"
+                            v-for="supply in station.supplies"
+                            :key="`${station.id}-${supply.id}`"
                             class="station-supply-row"
                           >
-                            <span class="supply-name">{{ supplyName }}</span>
+                            <span class="supply-name">{{ supply.name }}</span>
+                            <span
+                              v-if="
+                                supply.count !== null &&
+                                supply.count !== undefined
+                              "
+                              class="supply-count"
+                            >
+                              {{ supply.count
+                              }}<template v-if="supply.unit">{{
+                                supply.unit
+                              }}</template>
+                            </span>
                           </li>
                         </ul>
                       </div>
@@ -1128,15 +1140,21 @@ const stationsForRequest = (req) => {
     const providers = supplyProviders[item.id] || [];
     providers.forEach((provider) => {
       const normalizedName = (provider.name || "").trim().toLowerCase();
-      const fallbackKey = `${provider.address || ""}|${provider.phone || ""}`;
-      const key = normalizedName || provider.id || fallbackKey || item.id;
+      const fallbackKey = `${provider.address || ""}|${
+        provider.phone || ""
+      }`.trim();
+      const key =
+        normalizedName ||
+        provider.id ||
+        fallbackKey ||
+        `${item.id}-${provider.name || ""}`;
       if (!providersMap.has(key)) {
         providersMap.set(key, {
           id: provider.id || key,
           name: provider.name?.trim() || "未命名物資站",
           address: (provider.address || "").trim(),
           phone: (provider.phone || "").trim(),
-          supplies: new Set(),
+          supplies: new Map(),
         });
       }
       const entry = providersMap.get(key);
@@ -1153,13 +1171,41 @@ const stationsForRequest = (req) => {
       const supplyId = provider.supplyItemId || item.id;
       const matchedItem = itemById.get(supplyId) || item;
       const supplyName = matchedItem?.name || item.name || "未命名物資";
-      entry.supplies.add(supplyName);
+      const supplyKey = supplyId || `${item.id}-${supplyName}`;
+      const supplyUnitRaw =
+        provider.provideUnit ?? matchedItem?.unit ?? item.unit ?? "";
+      const supplyUnit =
+        typeof supplyUnitRaw === "string"
+          ? supplyUnitRaw.trim()
+          : `${supplyUnitRaw}`.trim();
+      const supplyCount =
+        provider.provideCount !== null && provider.provideCount !== undefined
+          ? provider.provideCount
+          : null;
+      const existingSupply = entry.supplies.get(supplyKey);
+      if (existingSupply) {
+        if (
+          (existingSupply.count === null ||
+            existingSupply.count === undefined) &&
+          supplyCount !== null
+        ) {
+          existingSupply.count = supplyCount;
+          existingSupply.unit = supplyUnit;
+        }
+      } else {
+        entry.supplies.set(supplyKey, {
+          id: supplyKey,
+          name: supplyName,
+          count: supplyCount,
+          unit: supplyUnit,
+        });
+      }
     });
   });
   return Array.from(providersMap.values()).map((provider) => ({
     ...provider,
     address: provider.address || "地址未提供",
-    supplies: Array.from(provider.supplies),
+    supplies: Array.from(provider.supplies.values()),
   }));
 };
 
@@ -1318,6 +1364,19 @@ const transformSupplyProviders = (providers) =>
       address: provider.address || "地址未提供",
       note: provider.note || provider.notes || "",
       supplyItemId: provider.supply_item_id || "",
+      provideCount: (() => {
+        const value =
+          provider.provide_count ?? provider.provideCount ?? provider.count;
+        if (value === null || value === undefined || value === "") return null;
+        const num = Number(value);
+        return Number.isFinite(num) ? num : null;
+      })(),
+      provideUnit: (() => {
+        const value =
+          provider.provide_unit ?? provider.provideUnit ?? provider.unit ?? "";
+        if (value === null || value === undefined) return "";
+        return typeof value === "string" ? value.trim() : `${value}`.trim();
+      })(),
     }));
 
 const parseSupplyProvidersResponse = (data) => {
@@ -2166,8 +2225,9 @@ html {
 
 .station-supply-row {
   display: flex;
+  justify-content: flex-start;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   font-size: 0.85rem;
   color: #334155;
 }
@@ -2179,6 +2239,11 @@ html {
 
 .supply-name {
   font-weight: 500;
+}
+
+.supply-count {
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .station-supplies-empty {
