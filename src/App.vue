@@ -91,8 +91,94 @@
               </div>
 
               <div v-show="!isCompletedCollapsed(req)" class="card-body">
+                <div v-if="!isCompleted(req)" class="card-stations">
+                  <div class="section-title">物資站聯絡</div>
+                  <div
+                    v-if="stationsForRequest(req).length"
+                    class="station-scroll"
+                  >
+                    <div
+                      v-for="station in stationsForRequest(req)"
+                      :key="station.id"
+                      class="station-card"
+                    >
+                      <div class="station-header">
+                        <span class="station-name">{{ station.name }}</span>
+
+                        <el-link
+                          v-if="station.address"
+                          class="contact-row station-link station-link-address"
+                          :href="mapLink(station.address)"
+                          target="_blank"
+                          :underline="false"
+                          @click.stop
+                        >
+                          <el-icon><Location /></el-icon>
+                          <span
+                            class="station-link-text station-link-text-address"
+                          >
+                            {{ station.address }}
+                          </span>
+                          <el-icon class="contact-link-icon"
+                            ><TopRight
+                          /></el-icon>
+                        </el-link>
+                        <el-link
+                          v-if="station.phone"
+                          class="contact-row station-link station-link-phone"
+                          :href="phoneHref(station.phone)"
+                          :underline="false"
+                          @click.stop
+                        >
+                          <el-icon><Phone /></el-icon>
+                          <span
+                            class="station-link-text station-link-text-phone"
+                          >
+                            {{ station.phone }}
+                          </span>
+                        </el-link>
+                      </div>
+
+                      <div
+                        v-if="station.supplies?.length"
+                        class="station-supplies"
+                      >
+                        <div class="station-supplies-title">可支援物資</div>
+                        <ul class="station-supplies-list">
+                          <li
+                            v-for="supply in station.supplies"
+                            :key="`${station.id}-${supply.id}`"
+                            class="station-supply-row"
+                          >
+                            <span class="supply-name">{{ supply.name }}</span>
+                            <span
+                              v-if="
+                                supply.count !== null &&
+                                supply.count !== undefined
+                              "
+                              class="supply-count"
+                            >
+                              {{ supply.count
+                              }}<template v-if="supply.unit">{{
+                                supply.unit
+                              }}</template>
+                            </span>
+                          </li>
+                        </ul>
+                      </div>
+
+                      <div v-else class="station-supplies-empty">
+                        暫無物資資訊
+                      </div>
+                    </div>
+                  </div>
+                  <div v-else class="station-empty">
+                    尋寶超人正在連線中，馬上幫你找到物資站！
+                  </div>
+                </div>
+
                 <div class="card-contact">
-                  <div class="section-title">聯絡資訊</div>
+                  <div class="section-title">災民聯絡</div>
                   <div class="contact-info">
                     <el-link
                       class="contact-row contact-link contact-link-map"
@@ -121,7 +207,7 @@
                 <div class="card-content">
                   <div class="section-title">需求物資</div>
                   <div
-                    v-for="({ item, index }) in pendingItems(req)"
+                    v-for="{ item, index } in pendingItems(req)"
                     :key="`${req.id}-${index}`"
                     class="item-row"
                     :class="{ 'is-fulfilled': isItemFulfilled(item) }"
@@ -166,7 +252,10 @@
                     全部物資已完成，以下為各項紀錄
                   </div>
 
-                  <div v-if="fulfilledItems(req).length > 0" class="fulfilled-items">
+                  <div
+                    v-if="fulfilledItems(req).length > 0"
+                    class="fulfilled-items"
+                  >
                     <div class="fulfilled-header">
                       <span class="fulfilled-title"
                         >已完成物資（{{ fulfilledItems(req).length }}）</span
@@ -196,7 +285,7 @@
                       class="fulfilled-list"
                     >
                       <div
-                        v-for="({ item, index }) in fulfilledItems(req)"
+                        v-for="{ item, index } in fulfilledItems(req)"
                         :key="`fulfilled-${req.id}-${index}`"
                         class="item-row is-fulfilled"
                       >
@@ -219,7 +308,8 @@
                               已收到 {{ item.got }}/{{ item.need
                               }}{{ item.unit }}，還需要：
                               <strong class="need-number"
-                                >{{ remainingNeed(item) }}{{ item.unit }}</strong
+                                >{{ remainingNeed(item)
+                                }}{{ item.unit }}</strong
                               >
                             </span>
                           </div>
@@ -684,6 +774,8 @@ const loading = ref(false);
 const loadingMore = ref(false);
 const nextPageUrl = ref(null);
 const totalItems = ref(0);
+const supplyProviders = reactive({});
+const providersLoading = new Set();
 const loadMoreTrigger = ref(null);
 const supportsIntersectionObserver =
   typeof window !== "undefined" && "IntersectionObserver" in window;
@@ -1037,6 +1129,86 @@ const pendingItems = (req) =>
 const fulfilledItems = (req) =>
   decorateRequestItems(req).filter(({ remaining }) => remaining === 0);
 
+const stationsForRequest = (req) => {
+  if (!req?.items?.length) return [];
+  const itemById = new Map(
+    req.items.filter((item) => item?.id).map((item) => [item.id, item])
+  );
+  const providersMap = new Map();
+  req.items.forEach((item) => {
+    if (!item?.id) return;
+    const providers = supplyProviders[item.id] || [];
+    providers.forEach((provider) => {
+      const normalizedName = (provider.name || "").trim().toLowerCase();
+      const fallbackKey = `${provider.address || ""}|${
+        provider.phone || ""
+      }`.trim();
+      const key =
+        normalizedName ||
+        provider.id ||
+        fallbackKey ||
+        `${item.id}-${provider.name || ""}`;
+      if (!providersMap.has(key)) {
+        providersMap.set(key, {
+          id: provider.id || key,
+          name: provider.name?.trim() || "未命名物資站",
+          address: (provider.address || "").trim(),
+          phone: (provider.phone || "").trim(),
+          supplies: new Map(),
+        });
+      }
+      const entry = providersMap.get(key);
+      if (!entry.id && provider.id) entry.id = provider.id;
+      if ((!entry.name || entry.name === "未命名物資站") && provider.name) {
+        entry.name = provider.name.trim();
+      }
+      if (!entry.address && provider.address) {
+        entry.address = provider.address.trim();
+      }
+      if (!entry.phone && provider.phone) {
+        entry.phone = provider.phone.trim();
+      }
+      const supplyId = provider.supplyItemId || item.id;
+      const matchedItem = itemById.get(supplyId) || item;
+      const supplyName = matchedItem?.name || item.name || "未命名物資";
+      const supplyKey = supplyId || `${item.id}-${supplyName}`;
+      const supplyUnitRaw =
+        provider.provideUnit ?? matchedItem?.unit ?? item.unit ?? "";
+      const supplyUnit =
+        typeof supplyUnitRaw === "string"
+          ? supplyUnitRaw.trim()
+          : `${supplyUnitRaw}`.trim();
+      const supplyCount =
+        provider.provideCount !== null && provider.provideCount !== undefined
+          ? provider.provideCount
+          : null;
+      const existingSupply = entry.supplies.get(supplyKey);
+      if (existingSupply) {
+        if (
+          (existingSupply.count === null ||
+            existingSupply.count === undefined) &&
+          supplyCount !== null
+        ) {
+          existingSupply.count = supplyCount;
+          existingSupply.unit = supplyUnit;
+        }
+      } else {
+        entry.supplies.set(supplyKey, {
+          id: supplyKey,
+          name: supplyName,
+          count: supplyCount,
+          unit: supplyUnit,
+        });
+      }
+    });
+  });
+  return Array.from(providersMap.values()).map((provider) => ({
+    ...provider,
+    address: provider.address || "地址未提供",
+    supplies: Array.from(provider.supplies.values()),
+  }));
+};
+
 const isItemFulfilled = (item) => remainingNeed(item) === 0;
 
 const progressPercentage = (item) => {
@@ -1179,6 +1351,99 @@ const transformApiData = (apiData) =>
       : [],
   }));
 
+const transformSupplyProviders = (providers) =>
+  (Array.isArray(providers) ? providers : [])
+    .filter(
+      (provider) =>
+        provider != null && !isTestNote(provider.note ?? provider.notes ?? "")
+    )
+    .map((provider, index) => ({
+      id: provider.id || `provider-${index}`,
+      name: provider.name || "未命名物資站",
+      phone: provider.phone || "",
+      address: provider.address || "地址未提供",
+      note: provider.note || provider.notes || "",
+      supplyItemId: provider.supply_item_id || "",
+      provideCount: (() => {
+        const value =
+          provider.provide_count ?? provider.provideCount ?? provider.count;
+        if (value === null || value === undefined || value === "") return null;
+        const num = Number(value);
+        return Number.isFinite(num) ? num : null;
+      })(),
+      provideUnit: (() => {
+        const value =
+          provider.provide_unit ?? provider.provideUnit ?? provider.unit ?? "";
+        if (value === null || value === undefined) return "";
+        return typeof value === "string" ? value.trim() : `${value}`.trim();
+      })(),
+    }));
+
+const parseSupplyProvidersResponse = (data) => {
+  if (!data) return [];
+  if (data["@type"] === "Collection" && Array.isArray(data.member)) {
+    return transformSupplyProviders(data.member);
+  }
+  if (Array.isArray(data)) {
+    return transformSupplyProviders(data);
+  }
+  return transformSupplyProviders([data]);
+};
+
+const fetchSupplyProviders = async (supplyItemId) => {
+  if (!supplyItemId) return [];
+  const cached = supplyProviders[supplyItemId];
+  if (cached !== undefined) return cached;
+  if (providersLoading.has(supplyItemId)) return [];
+  providersLoading.add(supplyItemId);
+  try {
+    const url = `${API_BASE_URL}/supply_providers?supply_item_id=${encodeURIComponent(
+      supplyItemId
+    )}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      if (response.status === 404) {
+        supplyProviders[supplyItemId] = [];
+        return [];
+      }
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status} - ${errorText}`);
+    }
+    const data = await response.json();
+    const providers = parseSupplyProvidersResponse(data);
+    supplyProviders[supplyItemId] = providers;
+    if (typeof window !== "undefined") {
+      requestAnimationFrame(adjustGoogleSitesHeight);
+    }
+    return providers;
+  } catch (error) {
+    ElMessage.warning(`無法載入物資站資訊: ${error.message}`);
+    supplyProviders[supplyItemId] = [];
+    if (typeof window !== "undefined") {
+      requestAnimationFrame(adjustGoogleSitesHeight);
+    }
+    return [];
+  } finally {
+    providersLoading.delete(supplyItemId);
+  }
+};
+
+const ensureProvidersForRequests = async (list) => {
+  const supplyIds = new Set();
+  list.forEach((req) => {
+    if (isCompleted(req)) return;
+    (req.items || []).forEach((item) => {
+      if (remainingNeed(item) === 0) return;
+      if (item?.id) supplyIds.add(item.id);
+    });
+  });
+  const idsToFetch = Array.from(supplyIds).filter(
+    (id) => id && supplyProviders[id] === undefined
+  );
+  if (idsToFetch.length === 0) return;
+  await Promise.all(idsToFetch.map((id) => fetchSupplyProviders(id)));
+};
+
 const mergeRequestsByOrganization = (list) => {
   const mergedMap = new Map();
   list.forEach((req) => {
@@ -1219,6 +1484,12 @@ const transformToApiData = (frontendData) => {
       unit: frontendData.items[0].unit,
     },
   };
+};
+
+const isTestNote = (value) => {
+  if (value === null || value === undefined) return false;
+  const normalized = `${value}`.trim().toLowerCase();
+  return normalized === "test" || normalized === "測試";
 };
 
 const parseApiResponse = (data) => {
@@ -1301,6 +1572,7 @@ const fetchRequests = async ({ append = false } = {}) => {
       }
     });
     requests.value = deduped;
+    await ensureProvidersForRequests(deduped);
     nextPageUrl.value = normalizeNextUrl(parsed.next);
     totalItems.value = Math.max(
       parsed.totalItems ?? deduped.length,
@@ -1847,6 +2119,136 @@ html {
   flex-direction: column;
   gap: 12px;
   background: transparent;
+}
+
+.card-stations {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.station-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.station-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.station-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.station-name {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.station-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: inherit;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.station-link-address {
+  color: var(--el-color-primary);
+}
+
+.station-link-address .station-link-text-address {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+.station-link-address :deep(.el-icon) {
+  color: var(--el-color-primary);
+}
+
+.station-link-phone {
+  color: #0f766e;
+}
+
+.station-link-phone .station-link-text-phone {
+  color: inherit;
+}
+
+.station-link :deep(.el-icon) {
+  font-size: 16px;
+}
+
+.station-empty {
+  font-size: 0.85rem;
+  color: #475569;
+  border-radius: 8px;
+  line-height: 1.5;
+}
+
+.station-supplies {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.station-supplies-title {
+  font-size: 0.8rem;
+  color: #475569;
+  font-weight: 500;
+}
+
+.station-supplies-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.station-supply-row {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.85rem;
+  color: #334155;
+}
+
+.station-supply-row + .station-supply-row {
+  border-top: 1px dashed #e2e8f0;
+  padding-top: 6px;
+}
+
+.supply-name {
+  font-weight: 500;
+}
+
+.supply-count {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.station-supplies-empty {
+  font-size: 0.8rem;
+  color: #94a3b8;
 }
 
 .all-fulfilled-hint {
