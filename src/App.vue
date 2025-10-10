@@ -104,7 +104,7 @@
                     >
                       <div class="station-header">
                         <span class="station-name">{{ station.name }}</span>
-
+                        <div class="station-note">{{ station.note }}</div>
                         <el-link
                           v-if="station.address"
                           class="contact-row station-link station-link-address"
@@ -1595,24 +1595,59 @@ const fetchRequests = async ({ append = false } = {}) => {
 };
 
 const createRequest = async (payload) => {
-  const promises = payload.items.map((item) => {
-    const apiData = transformToApiData({ ...payload, items: [item] });
-    return fetch(`${API_BASE_URL}/supplies`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(apiData),
-    });
+  // First, create the supply with the first item
+  const firstItemData = transformToApiData({ ...payload, items: [payload.items[0]] });
+  const firstResponse = await fetch(`${API_BASE_URL}/supplies`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(firstItemData),
   });
-  const responses = await Promise.all(promises);
-  for (let i = 0; i < responses.length; i += 1) {
-    const response = responses[i];
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `第 ${i + 1} 個物資新增失敗: HTTP ${response.status} - ${errorText}`
-      );
+
+  if (!firstResponse.ok) {
+    const errorText = await firstResponse.text();
+    throw new Error(
+      `第 1 個物資新增失敗: HTTP ${firstResponse.status} - ${errorText}`
+    );
+  }
+
+  const firstResponseData = await firstResponse.json();
+  const supplyId = firstResponseData.id;
+
+  if (!supplyId) {
+    throw new Error("無法取得物資 ID");
+  }
+
+  // Then create the remaining items using the supply_id
+  if (payload.items.length > 1) {
+    const remainingItems = payload.items.slice(1);
+    const promises = remainingItems.map((item) => {
+      const supplyItemData = {
+        supply_id: supplyId,
+        tag: item.type,
+        name: item.name,
+        total_count: item.need,
+        unit: item.unit,
+      };
+      return fetch(`${API_BASE_URL}/supply_items`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(supplyItemData),
+      });
+    });
+
+    const responses = await Promise.all(promises);
+    for (let i = 0; i < responses.length; i += 1) {
+      const response = responses[i];
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `第 ${i + 2} 個物資新增失敗: HTTP ${response.status} - ${errorText}`
+        );
+      }
     }
   }
 };
@@ -2213,6 +2248,10 @@ html {
   font-size: 0.8rem;
   color: #475569;
   font-weight: 500;
+  background-color: #add8bd;
+  width: fit-content;
+  padding: 2px 8px;
+  border-radius: 6px;
 }
 
 .station-supplies-list {
@@ -2250,6 +2289,13 @@ html {
 .station-supplies-empty {
   font-size: 0.8rem;
   color: #94a3b8;
+}
+
+.station-note {
+  font-size: 0.75rem;
+  color: #475569;
+  white-space: pre-wrap;
+  line-height: 1.4;
 }
 
 .all-fulfilled-hint {
