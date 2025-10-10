@@ -1355,14 +1355,14 @@ const transformSupplyProviders = (providers) =>
   (Array.isArray(providers) ? providers : [])
     .filter(
       (provider) =>
-        provider != null && !isTestNote(provider.note ?? provider.notes ?? "")
+        provider != null && !isNeedIgnoreNote(provider.notes ?? "")
     )
     .map((provider, index) => ({
       id: provider.id || `provider-${index}`,
       name: provider.name || "未命名物資站",
       phone: provider.phone || "",
       address: provider.address || "地址未提供",
-      note: provider.note || provider.notes || "",
+      note: provider.notes || "",
       supplyItemId: provider.supply_item_id || "",
       provideCount: (() => {
         const value =
@@ -1487,10 +1487,10 @@ const transformToApiData = (frontendData) => {
   };
 };
 
-const isTestNote = (value) => {
+const isNeedIgnoreNote = (value) => {
   if (value === null || value === undefined) return false;
   const normalized = `${value}`.trim().toLowerCase();
-  return normalized === "test" || normalized === "測試";
+  return normalized === "test" || normalized === "測試" || normalized === "need_delete";
 };
 
 const parseApiResponse = (data) => {
