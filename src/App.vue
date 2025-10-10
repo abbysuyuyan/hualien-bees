@@ -104,7 +104,7 @@
                     >
                       <div class="station-header">
                         <span class="station-name">{{ station.name }}</span>
-                        <div class="station-note">{{ station.note }}</div>
+                        <div class="station-note">{{ station.notes }}</div>
                         <el-link
                           v-if="station.address"
                           class="contact-row station-link station-link-address"
