@@ -104,7 +104,7 @@
                     >
                       <div class="station-header">
                         <span class="station-name">{{ station.name }}</span>
-
+                        <div class="station-note">{{ station.note }}</div>
                         <el-link
                           v-if="station.address"
                           class="contact-row station-link station-link-address"
@@ -2213,6 +2213,10 @@ html {
   font-size: 0.8rem;
   color: #475569;
   font-weight: 500;
+  background-color: #add8bd;
+  width: fit-content;
+  padding: 2px 8px;
+  border-radius: 6px;
 }
 
 .station-supplies-list {
@@ -2250,6 +2254,13 @@ html {
 .station-supplies-empty {
   font-size: 0.8rem;
   color: #94a3b8;
+}
+
+.station-note {
+  font-size: 0.75rem;
+  color: #475569;
+  white-space: pre-wrap;
+  line-height: 1.4;
 }
 
 .all-fulfilled-hint {
