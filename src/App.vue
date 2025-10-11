@@ -42,7 +42,7 @@
         </el-select>
 
         <el-checkbox v-model="showPendingOnly" class="pending-checkbox">
-          只顯示待配送物資
+          只顯示待配送項目
         </el-checkbox>
       </div>
 
@@ -209,7 +209,7 @@
                 </div>
 
                 <div class="card-content">
-                  <div class="section-title">需求物資</div>
+                  <div class="section-title">需求（人力可填寫志工媒合）</div>
                   <div
                     v-for="{ item, index } in pendingItems(req)"
                     :key="`${req.id}-${index}`"
@@ -262,7 +262,7 @@
                   >
                     <div class="fulfilled-header">
                       <span class="fulfilled-title"
-                        >已完成物資（{{ fulfilledItems(req).length }}）</span
+                        >已完成項目（{{ fulfilledItems(req).length }}）</span
                       >
                       <el-button
                         text
@@ -412,7 +412,7 @@
     <!-- Create Dialog -->
     <el-dialog
       v-model="createDialogVisible"
-      title="物資需求"
+      title="需求清單"
       class="dialog-responsive"
       :style="{ maxHeight: '70vh', overflow: 'auto' }"
       @closed="onCreateClosed"
@@ -442,7 +442,7 @@
 
       <section class="materials-section">
         <div class="materials-header">
-          <h3>物資清單<span class="required">*</span></h3>
+          <h3>需求項目<span class="required">*</span></h3>
         </div>
 
         <div v-if="createForm.items.length === 0" class="items-empty">
@@ -494,7 +494,7 @@
           :icon="Plus"
           @click="addCreateItem"
         >
-          新增物資
+          新增需求
         </el-button>
       </section>
 
@@ -584,11 +584,11 @@
     <!-- Delivery Dialog -->
     <el-dialog
       v-model="deliveryDialogVisible"
-      title="物資配送"
+      title="配送清單"
       class="dialog-responsive delivery-dialog"
       @closed="onDeliveryClosed"
     >
-      <p class="hint">目前物資需求進度</p>
+      <p class="hint">目前配送進度</p>
 
       <el-empty
         v-if="deliveryDisplayItems.length === 0"
