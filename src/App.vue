@@ -13,10 +13,13 @@
         >
           新增物資需求
         </el-button>
-        <p class="header-note">
-          <span class="outline-icon note-icon">!</span>
-          此網頁不提供物資捐贈，僅支援當地居民需求、蜜蜂配送！
-        </p>
+        <div class="header-note">
+          <div style="padding-left: 12px;">⚠ 此表單為蜜蜂配給媒合用，捐物資請寄：</div>
+          <ul style="margin: 6px 0 0 0">
+            <li>大馬太鞍 - 自救會副主席 0989091032 花蓮縣光復鄉大同村 中山路三段84號</li>
+            <li>糖廠「大倉」- 中央/縣府 0937909124 花蓮縣光復鄉糖廠街18號</li>
+          </ul>
+        </div>
       </div>
     </header>
 
@@ -1795,10 +1798,8 @@ html {
 }
 
 .header-note {
-  display: flex;
   align-items: flex-start;
   gap: 8px;
-  margin: 0;
   font-size: 0.9rem;
   color: #f87171;
   font-weight: 500;
