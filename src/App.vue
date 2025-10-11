@@ -756,7 +756,9 @@ import {
   WarningFilled,
 } from "@element-plus/icons-vue";
 
-const API_BASE_URL = "https://guangfu250923.pttapp.cc";
+const USE_NEW_API = false;
+const API_BASE_URL = (USE_NEW_API)? "https://api.fg250923.org" : "https://guangfu250923.pttapp.cc";
+// const API_BASE_URL = `${window.location.origin}/api`;   // for local test
 
 const TYPE_MAP = {
   "食物/水": { label: "飲食", order: 0, color: "#14b8a6" },
@@ -1348,8 +1350,8 @@ const transformApiData = (apiData) =>
             id: supply.id || "",
             name: supply.name || "未命名物資",
             type: supply.tag || "其他",
-            need: supply.total_count || 1,
-            got: supply.recieved_count || 0,
+            need: supply.total_number || supply.total_count || 1,
+            got: supply.received_count || supply.recieved_count || 0,
             unit: supply.unit || "個",
           }))
       : [],
@@ -1385,7 +1387,7 @@ const transformSupplyProviders = (providers) =>
 
 const parseSupplyProvidersResponse = (data) => {
   if (!data) return [];
-  if (data["@type"] === "Collection" && Array.isArray(data.member)) {
+  if (((!data["@type"]) || (data["@type"] === "Collection")) && Array.isArray(data.member)) {
     return transformSupplyProviders(data.member);
   }
   if (Array.isArray(data)) {
@@ -1477,18 +1479,27 @@ const transformToApiData = (frontendData) => {
   if (frontendData.items.length === 0) {
     throw new Error("至少需要一個物資項目");
   }
-  return {
+
+  const ret = {
     name: frontendData.org,
     address: frontendData.address,
     phone: frontendData.phone,
     supplies: {
       tag: frontendData.items[0].type,
       name: frontendData.items[0].name,
-      recieved_count: frontendData.items[0].got,
-      total_count: frontendData.items[0].need,
       unit: frontendData.items[0].unit,
     },
   };
+
+  if (USE_NEW_API) {
+    ret.supplies.received_count = frontendData.items[0].got;
+    ret.supplies.total_number = frontendData.items[0].need;
+  } else {
+    ret.supplies.recieved_count = frontendData.items[0].got;
+    ret.supplies.total_count = frontendData.items[0].need;
+  }
+
+  return ret;
 };
 
 const isNeedIgnoreNote = (value) => {
@@ -1508,7 +1519,7 @@ const parseApiResponse = (data) => {
       offset: 0,
     };
   }
-  if (data["@type"] === "Collection" && Array.isArray(data.member)) {
+  if (((!data["@type"]) || (data["@type"] === "Collection")) && Array.isArray(data.member)) {
     return {
       items: transformApiData(data.member),
       next: data.next ?? null,
@@ -1618,6 +1629,7 @@ const createRequest = async (payload) => {
 
   const firstResponseData = await firstResponse.json();
   const supplyId = firstResponseData.id;
+  const valid_pin = firstResponseData.valid_pin?? "";
 
   if (!supplyId) {
     throw new Error("無法取得物資 ID");
@@ -1631,9 +1643,16 @@ const createRequest = async (payload) => {
         supply_id: supplyId,
         tag: item.type,
         name: item.name,
-        total_count: item.need,
         unit: item.unit,
       };
+
+      if (USE_NEW_API) {
+        supplyItemData.total_number = item.need;
+        supplyItemData.valid_pin = valid_pin;
+      } else {
+        supplyItemData.total_count = item.need;
+      }
+
       return fetch(`${API_BASE_URL}/supply_items`, {
         method: "POST",
         headers: {
