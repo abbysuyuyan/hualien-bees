@@ -44,6 +44,9 @@
         <el-checkbox v-model="showPendingOnly" class="pending-checkbox">
           只顯示待配送項目
         </el-checkbox>
+        <el-checkbox v-model="showFulfilledOnly" class="pending-checkbox">
+          只顯示已完成配送項目
+        </el-checkbox>
       </div>
 
       <el-skeleton v-if="loading" class="loading" :rows="6" animated />
@@ -794,6 +797,7 @@ const submitting = reactive({
 
 const selectedTag = ref("");
 const showPendingOnly = ref(false);
+const showFulfilledOnly = ref(false);
 const tagFilterOptions = computed(() => [
   { value: "", label: "全部類別" },
   ...typeOptions,
@@ -1066,9 +1070,17 @@ const visibleRequests = computed(() => {
       req.items.some((item) => item.type === selectedTag.value)
     );
   }
+
+  // filtering for checkboxes
   if (showPendingOnly.value) {
-    list = list.filter((req) => requestStatus(req).label === "尚缺");
+    list = list.filter((req) => requestStatus(req).label !== "已完成");
+  } else if (showFulfilledOnly.value) {
+    list = list.filter((req) => requestStatus(req).label === "已完成");
+  } else if (hasMore.value || loadingMore.value) {
+    // both checkboxes are off, and the pages are completely loaded
+    list = list.filter((req) => requestStatus(req).label !== "已完成");
   }
+
   return list;
 });
 
@@ -1776,6 +1788,16 @@ watch(selectedTag, () => {
 });
 
 watch(showPendingOnly, () => {
+  if (showPendingOnly.value) {
+    showFulfilledOnly.value = !showPendingOnly.value;
+  }
+  requestAnimationFrame(adjustGoogleSitesHeight);
+});
+
+watch(showFulfilledOnly, () => {
+  if (showFulfilledOnly.value) {
+    showPendingOnly.value = !showFulfilledOnly.value;
+  }
   requestAnimationFrame(adjustGoogleSitesHeight);
 });
 
