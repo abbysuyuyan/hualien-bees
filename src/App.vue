@@ -11,7 +11,7 @@
           :icon="Plus"
           @click="openCreate"
         >
-          新增物資需求
+          新增配送需求
         </el-button>
         <div class="header-note">
           <div style="padding-left: 12px;">⚠ 此表單為蜜蜂配給媒合用，捐物資請寄：</div>
