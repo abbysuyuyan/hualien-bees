@@ -1574,7 +1574,9 @@ const normalizeNextUrl = (url) => {
 const fetchRequests = async ({ append = false } = {}) => {
   if (loading.value || loadingMore.value) return;
 
-  const baseUrl = `${API_BASE_URL}/supplies?embed=all&limit=50&offset=0`;
+  const baseUrl = (USE_NEW_API)
+    ? `${API_BASE_URL}/supplies?limit=50&offset=0`
+    : `${API_BASE_URL}/supplies?embed=all&limit=50&offset=0`;
   const targetUrl = append ? normalizeNextUrl(nextPageUrl.value) : baseUrl;
 
   if (!targetUrl) return;
