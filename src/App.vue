@@ -1081,7 +1081,8 @@ const visibleRequests = computed(() => {
   } else if (showFulfilledOnly.value) {
     list = list.filter((req) => requestStatus(req).label === "已完成");
   } else if (hasMore.value || loadingMore.value) {
-    // both checkboxes are off, and the pages are completely loaded
+    // both checkboxes are off
+    // show unfinished requests only, until the pages are completely loaded
     list = list.filter((req) => requestStatus(req).label !== "已完成");
   }
 
