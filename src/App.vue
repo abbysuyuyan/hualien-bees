@@ -94,7 +94,7 @@
                       >發布 {{ formatTimeAgo(req.created_at) }}</span
                     >
                   </div>
-                </div>  
+                </div>
               </div>
 
               <div v-show="!isCompletedCollapsed(req)" class="card-body">
