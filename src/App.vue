@@ -765,8 +765,7 @@ import {
 } from "@element-plus/icons-vue";
 
 const USE_NEW_API = true;
-const API_BASE_URL = (USE_NEW_API)? "https://api.fg250923.org" : "https://guangfu250923.pttapp.cc";
-// const API_BASE_URL = `${window.location.origin}/api`;   // for local test
+const API_BASE_URL = (USE_NEW_API)? `${window.location.origin}/api` : "https://guangfu250923.pttapp.cc";
 
 const TYPE_MAP = {
   "食物/水": { label: "飲食", order: 0, color: "#14b8a6" },
