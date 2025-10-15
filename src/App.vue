@@ -764,7 +764,7 @@ import {
   WarningFilled,
 } from "@element-plus/icons-vue";
 
-const USE_NEW_API = true;
+const USE_NEW_API = false;
 const API_BASE_URL = (USE_NEW_API)? `${window.location.origin}/api` : "https://guangfu250923.pttapp.cc";
 
 const TYPE_MAP = {
