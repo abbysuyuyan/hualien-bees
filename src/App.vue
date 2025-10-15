@@ -98,6 +98,10 @@
               </div>
 
               <div v-show="!isCompletedCollapsed(req)" class="card-body">
+
+                <!-- Disable showing supply provider info as no one would write data currently -->
+
+                <!--
                 <div v-if="!isCompleted(req)" class="card-stations">
                   <div class="section-title">物資站聯絡</div>
                   <div
@@ -183,6 +187,7 @@
                     尋寶超人正在連線中，馬上幫你找到物資站！
                   </div>
                 </div>
+                -->
 
                 <div class="card-contact">
                   <div class="section-title">居民聯絡</div>
@@ -759,7 +764,7 @@ import {
   WarningFilled,
 } from "@element-plus/icons-vue";
 
-const USE_NEW_API = false;
+const USE_NEW_API = true;
 const API_BASE_URL = (USE_NEW_API)? "https://api.fg250923.org" : "https://guangfu250923.pttapp.cc";
 // const API_BASE_URL = `${window.location.origin}/api`;   // for local test
 
@@ -1600,7 +1605,10 @@ const fetchRequests = async ({ append = false } = {}) => {
       }
     });
     requests.value = deduped;
-    await ensureProvidersForRequests(deduped);
+
+    // Disable the supply provider query as no one would write the data currently
+    // await ensureProvidersForRequests(deduped);
+
     nextPageUrl.value = normalizeNextUrl(parsed.next);
     totalItems.value = Math.max(
       parsed.totalItems ?? deduped.length,
