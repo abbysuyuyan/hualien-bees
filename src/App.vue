@@ -764,8 +764,8 @@ import {
   WarningFilled,
 } from "@element-plus/icons-vue";
 
-const USE_NEW_API = false;
-const API_BASE_URL = (USE_NEW_API)? `${window.location.origin}/api` : "https://guangfu250923.pttapp.cc";
+const USE_NEW_API = true;
+const API_BASE_URL = (USE_NEW_API)? "https://api.gf250923.org" : "https://guangfu250923.pttapp.cc";
 
 const TYPE_MAP = {
   "食物/水": { label: "飲食", order: 0, color: "#14b8a6" },
@@ -1081,7 +1081,8 @@ const visibleRequests = computed(() => {
   } else if (showFulfilledOnly.value) {
     list = list.filter((req) => requestStatus(req).label === "已完成");
   } else if (hasMore.value || loadingMore.value) {
-    // both checkboxes are off, and the pages are completely loaded
+    // both checkboxes are off
+    // show unfinished requests only, until the pages are completely loaded
     list = list.filter((req) => requestStatus(req).label !== "已完成");
   }
 
