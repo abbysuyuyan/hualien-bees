@@ -453,6 +453,11 @@
           <h3>需求項目<span class="required">*</span></h3>
         </div>
 
+        <span class="hint with-icon" style="margin: 0;">
+          <el-icon><WarningFilled /></el-icon>
+          便當需求請註明時間 -「便當 (10/23午餐)」
+        </span>
+
         <div v-if="createForm.items.length === 0" class="items-empty">
           請新增至少一項物資需求
         </div>
